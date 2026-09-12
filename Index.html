@@ -1,1 +1,271 @@
 
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#3e4e3b">
+
+  <title>Paws Incorporated — Good things for good pets</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="styles.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script defer src="app.js"></script>
+  <script defer src="auth.js"></script>
+</head>
+
+<body>
+  <div class="promo">
+    Free delivery on orders over R600
+    <span>·</span>
+    Made for good days together
+  </div>
+
+  <nav class="nav shell">
+    <a class="brand" href="index.html" aria-label="Paws Incorporated home">
+      <img src="garfield-odie.jpg" alt="Garfield and Odie">
+      <span>paws incorporated</span>
+    </a>
+
+    <div class="nav-links">
+      <a href="#shop">Shop all</a>
+      <a href="#story">Our story</a>
+      <a href="#journal">The journal</a>
+      <a href="auth.html">Account</a>
+    </div>
+
+    <div class="nav-actions">
+      <label class="search">
+        ⌕
+        <input
+          id="search"
+          placeholder="Find a favourite"
+          aria-label="Search products"
+        >
+      </label>
+
+      <button
+        class="bag-button"
+        id="bag-button"
+        aria-label="Open shopping bag"
+      >
+        ♧
+        <i id="bag-count">0</i>
+      </button>
+    </div>
+  </nav>
+
+  <main id="top">
+    <section class="shell hero">
+      <div class="hero-copy">
+        <div class="eyebrow">
+          ✦ Small joys, thoughtfully chosen
+        </div>
+
+        <h1>
+          Better days<br>
+          <em>start here.</em>
+        </h1>
+
+        <p>
+          The everyday essentials that make life with your best friend
+          a little softer, brighter and more fun.
+        </p>
+
+        <a class="button primary" href="#shop">
+          Shop the collection
+          <span>→</span>
+        </a>
+      </div>
+
+      <div class="hero-photo">
+        <img
+          src="https://images.unsplash.com/photo-1522444195799-478538b28823?auto=format&fit=crop&w=1200&q=90"
+          alt="French bulldog relaxing on a soft bed"
+        >
+
+        <div class="review">
+          ★★★★★
+          <b>“The bed of dreams.”</b>
+          <small>— Pickles, professional napper</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell trust">
+      <div>♧ <span>Free delivery over R600</span></div>
+      <div>▧ <span>Ships in 1–2 business days</span></div>
+      <div>⌁ <span>Tested by happy pets</span></div>
+    </section>
+
+    <section class="shell collection" id="shop">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow-text">The good stuff</p>
+
+          <h2>
+            Little luxuries,<br>
+            <em>big tail wags.</em>
+          </h2>
+        </div>
+
+        <p>
+          A considered collection for pets who know what they like —
+          and people who love them a lot.
+        </p>
+      </div>
+
+      <div class="toolbar">
+        <div class="filters" id="filters"></div>
+        <span class="piece-count" id="piece-count"></span>
+      </div>
+
+      <div class="product-grid" id="product-grid"></div>
+    </section>
+
+    <section class="story" id="story">
+      <div class="shell story-grid">
+        <div class="story-photo">
+          <img
+            src="https://images.unsplash.com/photo-1494256997604-768d1f608cac?auto=format&fit=crop&w=850&q=85"
+            alt="A cozy cat resting in a warm blanket"
+          >
+        </div>
+
+        <div class="story-copy">
+          <p class="eyebrow-text">Why Paws Incorporated</p>
+
+          <h2>
+            Made for the<br>
+            <em>everyday magic.</em>
+          </h2>
+
+          <p>
+            We believe the little rituals matter: the morning walk,
+            the sunniest patch of floor, the treat after a long day.
+            So we find beautiful, useful things that make those moments
+            even better.
+          </p>
+
+          <ul>
+            <li>✓ Thoughtful, pet-safe materials</li>
+            <li>✓ Small-batch feel, everyday prices</li>
+            <li>✓ Chosen for real-life messes</li>
+            <li>✓ Always a little more joy</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell journal" id="journal">
+      <p class="eyebrow-text">A note from the pack</p>
+
+      <h2>
+        Good advice for<br>
+        <em>good pet people.</em>
+      </h2>
+
+      <p>
+        Join our little corner of the internet for care tips,
+        new finds and the occasional very cute photo.
+      </p>
+
+      <form id="newsletter">
+        <input
+          type="email"
+          required
+          placeholder="Your email address"
+          aria-label="Email address"
+        >
+
+        <button class="button dark">
+          Keep me posted
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-inner">
+      <div>
+        <a class="brand light" href="index.html">
+          <img src="garfield-odie.jpg" alt="Garfield and Odie">
+          <span>paws incorporated</span>
+        </a>
+
+        <p>
+          Beautiful everyday things for the pets who make home feel like home.
+        </p>
+      </div>
+
+      <div class="footer-links">
+        <a href="#shop">Shop</a>
+        <a href="#story">Our story</a>
+        <a href="auth.html">Account</a>
+      </div>
+
+      <small>© 2026 Paws Incorporated</small>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <aside
+    class="cart-drawer"
+    id="cart-drawer"
+    aria-hidden="true"
+  >
+    <div class="drawer-backdrop" data-close-cart></div>
+
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <div>
+          <p class="eyebrow-text">Your little collection</p>
+          <h2>Shopping bag</h2>
+        </div>
+
+        <button
+          data-close-cart
+          class="close"
+          aria-label="Close shopping bag"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="cart-items" id="cart-items"></div>
+
+      <div class="drawer-foot">
+        <div>
+          <span>Subtotal</span>
+          <b id="cart-total">R0</b>
+        </div>
+
+        <p>
+          Free delivery on orders over R600.
+          Taxes calculated at checkout.
+        </p>
+
+        <button
+          id="checkout"
+          class="button primary full"
+        >
+          Continue to checkout
+          <span>→</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+</body>
+</html>
+

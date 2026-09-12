@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    Account — Paws Incorporated
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="styles.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="auth-pages.css"
+  >
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="config.js"></script>
+
+  <script
+    defer
+    src="auth.js"
+  ></script>
+
+</head>
+
+<body class="auth-page">
+
+  <nav class="auth-shell auth-nav">
+
+    <a
+      class="brand"
+      href="index.html"
+    >
+
+      <img
+        src="garfield-odie.jpg"
+        alt="Garfield and Odie"
+      >
+
+      <span>
+        paws incorporated
+      </span>
+
+    </a>
+
+    <a href="index.html">
+      Back to shop
+    </a>
+
+  </nav>
+
+  <main class="auth-shell">
+
+    <section class="auth-card">
+
+      <p class="eyebrow-text">
+        Your Paws account
+      </p>
+
+      <h1>
+        Welcome back.
+      </h1>
+
+      <p>
+        Save your details, view past orders and keep all
+        your pet favourites in one place.
+      </p>
+
+      <form
+        id="auth-form"
+        class="auth-form"
+      >
+
+        <label id="name-field">
+
+          Full name
+
+          <input
+            name="fullName"
+            autocomplete="name"
+            placeholder="Your name"
+          >
+
+        </label>
+
+        <label>
+
+          Email
+
+          <input
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="you@example.com"
+          >
+
+        </label>
+
+        <label>
+
+          Password
+
+          <input
+            name="password"
+            type="password"
+            required
+            minlength="6"
+            autocomplete="current-password"
+            placeholder="At least 6 characters"
+          >
+
+        </label>
+
+        <button
+          class="button primary"
+          type="submit"
+          id="auth-submit"
+        >
+          Create account
+        </button>
+
+      </form>
+
+      <p
+        class="auth-message"
+        id="auth-message"
+      ></p>
+
+      <p class="auth-switch">
+
+        <button
+          class="text-button"
+          id="toggle-auth"
+          type="button"
+        >
+          Already have an account? Sign in
+        </button>
+
+      </p>
+
+      <p class="auth-switch">
+
+        <button
+          class="text-button"
+          id="forgot-password"
+          type="button"
+        >
+          Forgot your password?
+        </button>
+
+      </p>
+
+    </section>
+
+  </main>
+
+</body>
+
+</html>

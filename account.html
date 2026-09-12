@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    My Account — Paws Incorporated
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="styles.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="auth-pages.css"
+  >
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="config.js"></script>
+
+  <script
+    defer
+    src="auth.js"
+  ></script>
+
+</head>
+
+<body class="auth-page">
+
+  <nav class="auth-shell auth-nav">
+
+    <a
+      class="brand"
+      href="index.html"
+    >
+
+      <img
+        src="garfield-odie.jpg"
+        alt="Garfield and Odie"
+      >
+
+      <span>
+        paws incorporated
+      </span>
+
+    </a>
+
+    <a href="index.html">
+      Continue shopping
+    </a>
+
+  </nav>
+
+  <main class="auth-shell account-layout">
+
+    <aside class="account-side">
+
+      <p class="eyebrow-text">
+        My account
+      </p>
+
+      <h1>
+        Hello,
+        <span id="account-name">
+          friend
+        </span>
+      </h1>
+
+      <nav>
+
+        <a
+          class="active"
+          href="#orders"
+        >
+          Order history
+        </a>
+
+        <a href="#profile">
+          Profile
+        </a>
+
+        <button id="sign-out">
+          Sign out
+        </button>
+
+      </nav>
+
+    </aside>
+
+    <section class="dashboard-main">
+
+      <div
+        class="dashboard-card"
+        id="profile"
+      >
+
+        <h2>
+          Your profile
+        </h2>
+
+        <form
+          id="profile-form"
+          class="auth-form"
+        >
+
+          <label>
+
+            Full name
+
+            <input
+              id="profile-name"
+              name="fullName"
+              autocomplete="name"
+            >
+
+          </label>
+
+          <label>
+
+            Phone
+
+            <input
+              id="profile-phone"
+              name="phone"
+              autocomplete="tel"
+            >
+
+          </label>
+
+          <button
+            class="button dark"
+            type="submit"
+          >
+            Save details
+          </button>
+
+        </form>
+
+        <p
+          class="auth-message"
+          id="profile-message"
+        ></p>
+
+      </div>
+
+      <div
+        class="dashboard-card"
+        id="orders"
+      >
+
+        <h2>
+          Your orders
+        </h2>
+
+        <div
+          class="data-list"
+          id="orders-list"
+        >
+
+          <p class="auth-message">
+            Loading your orders...
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</body>
+
+</html>

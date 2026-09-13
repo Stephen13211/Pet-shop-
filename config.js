@@ -8,3 +8,4 @@ window.PETSHOP_CONFIG = {
   checkoutFunctionUrl:
     "https://sojgjaszbrzvialvcici.supabase.co/functions/v1/create-checkout"
 };
+console.log("CONFIG LOADED:", window.PETSHOP_CONFIG);

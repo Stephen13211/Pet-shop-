@@ -1,3 +1,4 @@
+```javascript
 const SAMPLE_PRODUCTS = [
   {
     id: "moss-bed",
@@ -79,7 +80,8 @@ let cart = JSON.parse(
   localStorage.getItem("moss-mud-cart") || "{}"
 );
 
-const $ = (selector) => document.querySelector(selector);
+const $ = (selector) =>
+  document.querySelector(selector);
 
 const money = (value) => {
   return `R${Number(value).toLocaleString("en-ZA")}`;
@@ -91,6 +93,7 @@ function showToast(message) {
   if (!toast) return;
 
   toast.textContent = message;
+
   toast.classList.add("show");
 
   clearTimeout(window.toastTimer);
@@ -101,15 +104,18 @@ function showToast(message) {
 }
 
 function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>'"]/g, (character) => {
-    return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      "'": "&#39;",
-      '"': "&quot;"
-    }[character];
-  });
+  return String(value ?? "").replace(
+    /[&<>'"]/g,
+    (character) => {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      }[character];
+    }
+  );
 }
 
 function saveCart() {
@@ -126,244 +132,359 @@ function renderFilters() {
 
   if (!filters) return;
 
-  filters.innerHTML = CATEGORIES.map((category) => {
-    return `
-      <button
-        class="filter ${
-          selectedCategory === category ? "active" : ""
-        }"
-        data-category="${escapeHtml(category)}"
-      >
-        ${escapeHtml(category)}
-      </button>
-    `;
-  }).join("");
+  filters.innerHTML =
+    CATEGORIES.map((category) => {
+      return `
+        <button
+          class="filter ${
+            selectedCategory === category
+              ? "active"
+              : ""
+          }"
+          data-category="${escapeHtml(category)}"
+        >
+          ${escapeHtml(category)}
+        </button>
+      `;
+    }).join("");
 }
 
 function renderProducts() {
-  const grid = $("#product-grid");
-  const pieceCount = $("#piece-count");
-  const searchInput = $("#search");
+  const grid =
+    $("#product-grid");
+
+  const pieceCount =
+    $("#piece-count");
+
+  const searchInput =
+    $("#search");
 
   if (!grid) return;
 
-  const searchTerm = searchInput
-    ? searchInput.value.trim().toLowerCase()
-    : "";
+  const searchTerm =
+    searchInput
+      ? searchInput.value
+          .trim()
+          .toLowerCase()
+      : "";
 
-  const filteredProducts = products.filter((product) => {
-    const matchesCategory =
-      selectedCategory === "All pieces" ||
-      product.category === selectedCategory;
+  const filteredProducts =
+    products.filter((product) => {
 
-    const searchableText = `
-      ${product.name || ""}
-      ${product.category || ""}
-      ${product.description || ""}
-      ${product.badge || ""}
-    `.toLowerCase();
+      const matchesCategory =
+        selectedCategory ===
+          "All pieces" ||
+        product.category ===
+          selectedCategory;
 
-    const matchesSearch =
-      !searchTerm ||
-      searchableText.includes(searchTerm);
+      const searchableText = `
+        ${product.name || ""}
+        ${product.category || ""}
+        ${product.description || ""}
+        ${product.badge || ""}
+      `.toLowerCase();
 
-    return matchesCategory && matchesSearch;
-  });
+      const matchesSearch =
+        !searchTerm ||
+        searchableText.includes(
+          searchTerm
+        );
+
+      return (
+        matchesCategory &&
+        matchesSearch
+      );
+    });
 
   if (pieceCount) {
     pieceCount.textContent =
       `${filteredProducts.length} ${
-        filteredProducts.length === 1 ? "piece" : "pieces"
+        filteredProducts.length === 1
+          ? "piece"
+          : "pieces"
       }`;
   }
 
   if (!filteredProducts.length) {
+
     grid.innerHTML = `
       <div class="empty">
         No pieces found.
       </div>
     `;
+
     return;
   }
 
-  grid.innerHTML = filteredProducts
-    .map((product) => {
-      const badge = product.badge
-        ? `
-          <span>
-            ${escapeHtml(product.badge)}
-          </span>
-        `
-        : "";
+  grid.innerHTML =
+    filteredProducts
+      .map((product) => {
 
-      return `
-        <article class="product-card">
-
-          <div class="product-image">
-
-            <img
-              src="${escapeHtml(product.image_url)}"
-              alt="${escapeHtml(product.name)}"
-              loading="lazy"
-            >
-
-            ${badge}
-
-            <button
-              type="button"
-              data-add="${escapeHtml(product.id)}"
-              aria-label="Add ${escapeHtml(product.name)} to bag"
-            >
-              +
-            </button>
-
-          </div>
-
-          <div class="product-info">
-
-            <div>
-              <small>
-                ${escapeHtml(product.category || "")}
-              </small>
-
-              <h3>
-                ${escapeHtml(product.name)}
-              </h3>
-            </div>
-
-            <b>
-              ${money(product.price_zar)}
-            </b>
-
-            <p>
-              ${escapeHtml(product.description || "")}
-            </p>
-
-          </div>
-
-        </article>
-      `;
-    })
-    .join("");
-}
-
-function renderCart() {
-  const cartItems = $("#cart-items");
-  const cartTotal = $("#cart-total");
-  const bagCount = $("#bag-count");
-
-  if (!cartItems) return;
-
-  const items = Object.values(cart);
-
-  const totalQuantity = items.reduce((total, item) => {
-    return total + Number(item.quantity || 0);
-  }, 0);
-
-  const totalPrice = items.reduce((total, item) => {
-    return (
-      total +
-      Number(item.price_zar || 0) *
-        Number(item.quantity || 0)
-    );
-  }, 0);
-
-  if (bagCount) {
-    bagCount.textContent = totalQuantity;
-  }
-
-  if (cartTotal) {
-    cartTotal.textContent = money(totalPrice);
-  }
-
-  if (!items.length) {
-    cartItems.innerHTML = `
-      <div class="empty-cart">
-        <h3>Your bag is waiting.</h3>
-        <p>
-          Add something lovely for your pet to get started.
-        </p>
-      </div>
-    `;
-    return;
-  }
-
-  cartItems.innerHTML = items
-    .map((item) => {
-      const quantity = Number(item.quantity || 0);
-
-      return `
-        <div class="cart-row">
-
-          <img
-            src="${escapeHtml(item.image_url)}"
-            alt="${escapeHtml(item.name)}"
-          >
-
-          <div>
-
-            <div class="cart-title">
+        const badge =
+          product.badge
+            ? `
               <span>
-                ${escapeHtml(item.name)}
-              </span>
-
-              <b>
-                ${money(
-                  Number(item.price_zar || 0) * quantity
+                ${escapeHtml(
+                  product.badge
                 )}
-              </b>
-            </div>
-
-            <small>
-              ${escapeHtml(item.category || "")}
-            </small>
-
-            <div class="quantity">
-
-              <button
-                type="button"
-                data-minus="${escapeHtml(item.id)}"
-                aria-label="Decrease quantity"
-              >
-                −
-              </button>
-
-              <span>
-                ${quantity}
               </span>
+            `
+            : "";
+
+        return `
+          <article class="product-card">
+
+            <div class="product-image">
+
+              <img
+                src="${escapeHtml(
+                  product.image_url
+                )}"
+                alt="${escapeHtml(
+                  product.name
+                )}"
+                loading="lazy"
+              >
+
+              ${badge}
 
               <button
                 type="button"
-                data-plus="${escapeHtml(item.id)}"
-                aria-label="Increase quantity"
+                data-add="${escapeHtml(
+                  product.id
+                )}"
+                aria-label="Add ${escapeHtml(
+                  product.name
+                )} to bag"
               >
                 +
               </button>
 
             </div>
 
-          </div>
+            <div class="product-info">
 
-        </div>
-      `;
-    })
-    .join("");
+              <div>
+
+                <small>
+                  ${escapeHtml(
+                    product.category || ""
+                  )}
+                </small>
+
+                <h3>
+                  ${escapeHtml(
+                    product.name
+                  )}
+                </h3>
+
+              </div>
+
+              <b>
+                ${money(
+                  product.price_zar
+                )}
+              </b>
+
+              <p>
+                ${escapeHtml(
+                  product.description || ""
+                )}
+              </p>
+
+            </div>
+
+          </article>
+        `;
+      })
+      .join("");
+}
+
+function renderCart() {
+
+  const cartItems =
+    $("#cart-items");
+
+  const cartTotal =
+    $("#cart-total");
+
+  const bagCount =
+    $("#bag-count");
+
+  if (!cartItems) return;
+
+  const items =
+    Object.values(cart);
+
+  const totalQuantity =
+    items.reduce(
+      (total, item) => {
+        return (
+          total +
+          Number(
+            item.quantity || 0
+          )
+        );
+      },
+      0
+    );
+
+  const totalPrice =
+    items.reduce(
+      (total, item) => {
+        return (
+          total +
+          Number(
+            item.price_zar || 0
+          ) *
+            Number(
+              item.quantity || 0
+            )
+        );
+      },
+      0
+    );
+
+  if (bagCount) {
+    bagCount.textContent =
+      totalQuantity;
+  }
+
+  if (cartTotal) {
+    cartTotal.textContent =
+      money(totalPrice);
+  }
+
+  if (!items.length) {
+
+    cartItems.innerHTML = `
+      <div class="empty-cart">
+
+        <h3>
+          Your bag is waiting.
+        </h3>
+
+        <p>
+          Add something lovely for your pet to get started.
+        </p>
+
+      </div>
+    `;
+
+    return;
+  }
+
+  cartItems.innerHTML =
+    items
+      .map((item) => {
+
+        const quantity =
+          Number(
+            item.quantity || 0
+          );
+
+        return `
+          <div class="cart-row">
+
+            <img
+              src="${escapeHtml(
+                item.image_url
+              )}"
+              alt="${escapeHtml(
+                item.name
+              )}"
+            >
+
+            <div>
+
+              <div class="cart-title">
+
+                <span>
+                  ${escapeHtml(
+                    item.name
+                  )}
+                </span>
+
+                <b>
+                  ${money(
+                    Number(
+                      item.price_zar || 0
+                    ) *
+                      quantity
+                  )}
+                </b>
+
+              </div>
+
+              <small>
+                ${escapeHtml(
+                  item.category || ""
+                )}
+              </small>
+
+              <div class="quantity">
+
+                <button
+                  type="button"
+                  data-minus="${escapeHtml(
+                    item.id
+                  )}"
+                  aria-label="Decrease quantity"
+                >
+                  −
+                </button>
+
+                <span>
+                  ${quantity}
+                </span>
+
+                <button
+                  type="button"
+                  data-plus="${escapeHtml(
+                    item.id
+                  )}"
+                  aria-label="Increase quantity"
+                >
+                  +
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+        `;
+      })
+      .join("");
 }
 
 function addToCart(productId) {
-  const product = products.find((item) => {
-    return String(item.id) === String(productId);
-  });
+
+  const product =
+    products.find((item) => {
+      return (
+        String(item.id) ===
+        String(productId)
+      );
+    });
 
   if (!product) {
-    showToast("Product could not be found.");
+
+    showToast(
+      "Product could not be found."
+    );
+
     return;
   }
 
   cart[productId] = {
     ...product,
+
     quantity:
-      Number(cart[productId]?.quantity || 0) + 1
+      Number(
+        cart[productId]?.quantity ||
+        0
+      ) + 1
   };
 
   saveCart();
@@ -373,13 +494,22 @@ function addToCart(productId) {
   );
 }
 
-function updateQuantity(productId, change) {
+function updateQuantity(
+  productId,
+  change
+) {
+
   if (!cart[productId]) return;
 
   cart[productId].quantity =
-    Number(cart[productId].quantity || 0) + change;
+    Number(
+      cart[productId].quantity ||
+      0
+    ) + change;
 
-  if (cart[productId].quantity < 1) {
+  if (
+    cart[productId].quantity < 1
+  ) {
     delete cart[productId];
   }
 
@@ -387,37 +517,56 @@ function updateQuantity(productId, change) {
 }
 
 function openCart() {
-  const drawer = $("#cart-drawer");
+
+  const drawer =
+    $("#cart-drawer");
 
   if (!drawer) return;
 
   drawer.classList.add("open");
-  drawer.setAttribute("aria-hidden", "false");
+
+  drawer.setAttribute(
+    "aria-hidden",
+    "false"
+  );
 }
 
 function closeCart() {
-  const drawer = $("#cart-drawer");
+
+  const drawer =
+    $("#cart-drawer");
 
   if (!drawer) return;
 
-  drawer.classList.remove("open");
-  drawer.setAttribute("aria-hidden", "true");
+  drawer.classList.remove(
+    "open"
+  );
+
+  drawer.setAttribute(
+    "aria-hidden",
+    "true"
+  );
 }
 
 async function loadProducts() {
-  const config = window.PETSHOP_CONFIG || {};
+
+  const config =
+    window.PETSHOP_CONFIG || {};
 
   try {
+
     if (
       !config.supabaseUrl ||
       !config.supabasePublishableKey
     ) {
+
       throw new Error(
         "Supabase configuration is missing."
       );
     }
 
     if (!window.supabase) {
+
       throw new Error(
         "Supabase JavaScript library was not loaded."
       );
@@ -429,19 +578,24 @@ async function loadProducts() {
         config.supabasePublishableKey
       );
 
-    const result = await supabaseClient
-      .from("products")
-      .select("*")
-      .eq("active", true)
-      .order("name");
+    const result =
+      await supabaseClient
+        .from("products")
+        .select("*")
+        .eq(
+          "active",
+          true
+        )
+        .order("name");
 
     if (result.error) {
       throw result.error;
     }
 
-    products = result.data?.length
-      ? result.data
-      : SAMPLE_PRODUCTS;
+    products =
+      result.data?.length
+        ? result.data
+        : SAMPLE_PRODUCTS;
 
     console.log(
       "Products loaded:",
@@ -449,12 +603,14 @@ async function loadProducts() {
     );
 
   } catch (error) {
+
     console.error(
       "Supabase product loading failed:",
       error
     );
 
-    products = SAMPLE_PRODUCTS;
+    products =
+      SAMPLE_PRODUCTS;
 
     showToast(
       "Using sample products because the catalogue could not be loaded."
@@ -466,81 +622,113 @@ async function loadProducts() {
   renderCart();
 }
 
-document.addEventListener("click", (event) => {
-  const categoryButton =
-    event.target.closest("[data-category]");
+document.addEventListener(
+  "click",
+  (event) => {
 
-  if (categoryButton) {
-    selectedCategory =
-      categoryButton.dataset.category;
+    const categoryButton =
+      event.target.closest(
+        "[data-category]"
+      );
 
-    renderFilters();
-    renderProducts();
+    if (categoryButton) {
 
-    return;
+      selectedCategory =
+        categoryButton.dataset.category;
+
+      renderFilters();
+      renderProducts();
+
+      return;
+    }
+
+    const addButton =
+      event.target.closest(
+        "[data-add]"
+      );
+
+    if (addButton) {
+
+      addToCart(
+        addButton.dataset.add
+      );
+
+      return;
+    }
+
+    const plusButton =
+      event.target.closest(
+        "[data-plus]"
+      );
+
+    if (plusButton) {
+
+      updateQuantity(
+        plusButton.dataset.plus,
+        1
+      );
+
+      return;
+    }
+
+    const minusButton =
+      event.target.closest(
+        "[data-minus]"
+      );
+
+    if (minusButton) {
+
+      updateQuantity(
+        minusButton.dataset.minus,
+        -1
+      );
+
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "[data-close-cart]"
+      )
+    ) {
+
+      closeCart();
+    }
+
   }
+);
 
-  const addButton =
-    event.target.closest("[data-add]");
-
-  if (addButton) {
-    addToCart(addButton.dataset.add);
-    return;
-  }
-
-  const plusButton =
-    event.target.closest("[data-plus]");
-
-  if (plusButton) {
-    updateQuantity(
-      plusButton.dataset.plus,
-      1
-    );
-    return;
-  }
-
-  const minusButton =
-    event.target.closest("[data-minus]");
-
-  if (minusButton) {
-    updateQuantity(
-      minusButton.dataset.minus,
-      -1
-    );
-    return;
-  }
-
-  if (
-    event.target.closest("[data-close-cart]")
-  ) {
-    closeCart();
-  }
-});
-
-const searchInput = $("#search");
+const searchInput =
+  $("#search");
 
 if (searchInput) {
+
   searchInput.addEventListener(
     "input",
     renderProducts
   );
 }
 
-const bagButton = $("#bag-button");
+const bagButton =
+  $("#bag-button");
 
 if (bagButton) {
+
   bagButton.addEventListener(
     "click",
     openCart
   );
 }
 
-const newsletter = $("#newsletter");
+const newsletter =
+  $("#newsletter");
 
 if (newsletter) {
+
   newsletter.addEventListener(
     "submit",
     (event) => {
+
       event.preventDefault();
 
       showToast(
@@ -552,138 +740,17 @@ if (newsletter) {
   );
 }
 
-const checkoutButton = $("#checkout");
+/*
+  Checkout is handled by auth.js.
 
-if (checkoutButton) {
-  checkoutButton.addEventListener(
-    "click",
-    async () => {
-      const items = Object.values(cart);
-      const config =
-        window.PETSHOP_CONFIG || {};
+  auth.js checks whether the customer
+  is signed in and then securely sends
+  the order to the Supabase Edge Function.
 
-      if (!items.length) {
-        showToast(
-          "Add a piece to your bag first."
-        );
-        return;
-      }
-
-      if (!config.checkoutFunctionUrl) {
-        showToast(
-          "Checkout is not configured yet."
-        );
-        return;
-      }
-
-      const firstName =
-        window.prompt("First name:");
-
-      if (!firstName) return;
-
-      const lastName =
-        window.prompt("Last name:");
-
-      if (!lastName) return;
-
-      const email =
-        window.prompt("Email address:");
-
-      if (!email) return;
-
-      showToast(
-        "Creating your secure PayFast Sandbox checkout..."
-      );
-
-      try {
-        const response = await fetch(
-          config.checkoutFunctionUrl,
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-
-              apikey:
-                config.supabasePublishableKey
-            },
-
-            body: JSON.stringify({
-              firstName,
-              lastName,
-              email,
-
-              items: items.map((item) => {
-                return {
-                  productId: item.id,
-                  quantity:
-                    Number(item.quantity || 0)
-                };
-              })
-            })
-          }
-        );
-
-        const result =
-          await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            result.error ||
-              "Checkout failed"
-          );
-        }
-
-        if (
-          !result.action ||
-          !result.fields
-        ) {
-          throw new Error(
-            "The checkout service returned an invalid response."
-          );
-        }
-
-        const form =
-          document.createElement("form");
-
-        form.method = "POST";
-        form.action = result.action;
-
-        Object.entries(
-          result.fields
-        ).forEach(
-          ([name, value]) => {
-            const input =
-              document.createElement(
-                "input"
-              );
-
-            input.type = "hidden";
-            input.name = name;
-            input.value = value;
-
-            form.appendChild(input);
-          }
-        );
-
-        document.body.appendChild(form);
-
-        form.submit();
-
-      } catch (error) {
-        console.error(
-          "Checkout error:",
-          error
-        );
-
-        showToast(
-          error.message ||
-            "Checkout failed"
-        );
-      }
-    }
-  );
-}
+  Do NOT add another checkout handler
+  here because that would bypass the
+  login protection.
+*/
 
 loadProducts();
+```

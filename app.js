@@ -7,7 +7,8 @@ const SAMPLE_PRODUCTS = [
     badge: "Bestseller",
     image_url:
       "https://images.unsplash.com/photo-1522444195799-478538b28823?auto=format&fit=crop&w=900&q=85",
-    description: "A washable, cloud-soft landing spot for serious snoozers."
+    description:
+      "A washable, cloud-soft landing spot for serious snoozers."
   },
   {
     id: "terra-bowl",
@@ -87,6 +88,8 @@ const money = (value) => {
 function showToast(message) {
   const toast = $("#toast");
 
+  if (!toast) return;
+
   toast.textContent = message;
   toast.classList.add("show");
 
@@ -98,7 +101,7 @@ function showToast(message) {
 }
 
 function escapeHtml(value) {
-  return String(value).replace(/[&<>'"]/g, (character) => {
+  return String(value ?? "").replace(/[&<>'"]/g, (character) => {
     return {
       "&": "&amp;",
       "<": "&lt;",
@@ -119,39 +122,264 @@ function saveCart() {
 }
 
 function renderFilters() {
-  $("#filters").innerHTML = CATEGORIES.map((category) => {
+  const filters = $("#filters");
+
+  if (!filters) return;
+
+  filters.innerHTML = CATEGORIES.map((category) => {
     return `
       <button
         class="filter ${
           selectedCategory === category ? "active" : ""
         }"
-        data-category="${category}"
+        data-category="${escapeHtml(category)}"
       >
-        ${category}
+        ${escapeHtml(category)}
       </button>
     `;
   }).join("");
 }
-function addToCart(productId) {
-  const product = products.find((item) => {
-    return item.id === productId;
+
+function renderProducts() {
+  const grid = $("#product-grid");
+  const pieceCount = $("#piece-count");
+  const searchInput = $("#search");
+
+  if (!grid) return;
+
+  const searchTerm = searchInput
+    ? searchInput.value.trim().toLowerCase()
+    : "";
+
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory =
+      selectedCategory === "All pieces" ||
+      product.category === selectedCategory;
+
+    const searchableText = `
+      ${product.name || ""}
+      ${product.category || ""}
+      ${product.description || ""}
+      ${product.badge || ""}
+    `.toLowerCase();
+
+    const matchesSearch =
+      !searchTerm ||
+      searchableText.includes(searchTerm);
+
+    return matchesCategory && matchesSearch;
   });
 
-  if (!product) return;
+  if (pieceCount) {
+    pieceCount.textContent =
+      `${filteredProducts.length} ${
+        filteredProducts.length === 1 ? "piece" : "pieces"
+      }`;
+  }
+
+  if (!filteredProducts.length) {
+    grid.innerHTML = `
+      <div class="empty">
+        No pieces found.
+      </div>
+    `;
+
+    return;
+  }
+
+  grid.innerHTML = filteredProducts
+    .map((product) => {
+      const badge = product.badge
+        ? `
+          <span>
+            ${escapeHtml(product.badge)}
+          </span>
+        `
+        : "";
+
+      return `
+        <article class="product-card">
+
+          <div class="product-image">
+
+            <img
+              src="${escapeHtml(product.image_url)}"
+              alt="${escapeHtml(product.name)}"
+              loading="lazy"
+            >
+
+            ${badge}
+
+            <button
+              type="button"
+              data-add="${escapeHtml(product.id)}"
+              aria-label="Add ${escapeHtml(product.name)} to bag"
+            >
+              +
+            </button>
+
+          </div>
+
+          <div class="product-info">
+
+            <div>
+              <small>
+                ${escapeHtml(product.category || "")}
+              </small>
+
+              <h3>
+                ${escapeHtml(product.name)}
+              </h3>
+            </div>
+
+            <b>
+              ${money(product.price_zar)}
+            </b>
+
+            <p>
+              ${escapeHtml(product.description || "")}
+            </p>
+
+          </div>
+
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderCart() {
+  const cartItems = $("#cart-items");
+  const cartTotal = $("#cart-total");
+  const bagCount = $("#bag-count");
+
+  if (!cartItems) return;
+
+  const items = Object.values(cart);
+
+  const totalQuantity = items.reduce((total, item) => {
+    return total + Number(item.quantity || 0);
+  }, 0);
+
+  const totalPrice = items.reduce((total, item) => {
+    return (
+      total +
+      Number(item.price_zar || 0) *
+        Number(item.quantity || 0)
+    );
+  }, 0);
+
+  if (bagCount) {
+    bagCount.textContent = totalQuantity;
+  }
+
+  if (cartTotal) {
+    cartTotal.textContent = money(totalPrice);
+  }
+
+  if (!items.length) {
+    cartItems.innerHTML = `
+      <div class="empty-cart">
+        <h3>Your bag is waiting.</h3>
+        <p>
+          Add something lovely for your pet to get started.
+        </p>
+      </div>
+    `;
+
+    return;
+  }
+
+  cartItems.innerHTML = items
+    .map((item) => {
+      const quantity = Number(item.quantity || 0);
+
+      return `
+        <div class="cart-row">
+
+          <img
+            src="${escapeHtml(item.image_url)}"
+            alt="${escapeHtml(item.name)}"
+          >
+
+          <div>
+
+            <div class="cart-title">
+              <span>
+                ${escapeHtml(item.name)}
+              </span>
+
+              <b>
+                ${money(
+                  Number(item.price_zar || 0) * quantity
+                )}
+              </b>
+            </div>
+
+            <small>
+              ${escapeHtml(item.category || "")}
+            </small>
+
+            <div class="quantity">
+
+              <button
+                type="button"
+                data-minus="${escapeHtml(item.id)}"
+                aria-label="Decrease quantity"
+              >
+                −
+              </button>
+
+              <span>
+                ${quantity}
+              </span>
+
+              <button
+                type="button"
+                data-plus="${escapeHtml(item.id)}"
+                aria-label="Increase quantity"
+              >
+                +
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function addToCart(productId) {
+  const product = products.find((item) => {
+    return String(item.id) === String(productId);
+  });
+
+  if (!product) {
+    showToast("Product could not be found.");
+    return;
+  }
 
   cart[productId] = {
     ...product,
-    quantity: (cart[productId]?.quantity || 0) + 1
+    quantity:
+      Number(cart[productId]?.quantity || 0) + 1
   };
 
   saveCart();
-  showToast(`${product.name} added to your bag`);
+
+  showToast(
+    `${product.name} added to your bag`
+  );
 }
 
 function updateQuantity(productId, change) {
   if (!cart[productId]) return;
 
-  cart[productId].quantity += change;
+  cart[productId].quantity =
+    Number(cart[productId].quantity || 0) + change;
 
   if (cart[productId].quantity < 1) {
     delete cart[productId];
@@ -161,22 +389,47 @@ function updateQuantity(productId, change) {
 }
 
 function openCart() {
-  $("#cart-drawer").classList.add("open");
-  $("#cart-drawer").setAttribute("aria-hidden", "false");
+  const drawer = $("#cart-drawer");
+
+  if (!drawer) return;
+
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
 }
 
 function closeCart() {
-  $("#cart-drawer").classList.remove("open");
-  $("#cart-drawer").setAttribute("aria-hidden", "true");
+  const drawer = $("#cart-drawer");
+
+  if (!drawer) return;
+
+  drawer.classList.remove("open");
+  drawer.setAttribute("aria-hidden", "true");
 }
 
 async function loadProducts() {
   const config = window.PETSHOP_CONFIG || {};
-try {
-    const supabaseClient = window.supabase.createClient(
-      config.supabaseUrl,
-      config.supabasePublishableKey
-    );
+
+  try {
+    if (
+      !config.supabaseUrl ||
+      !config.supabasePublishableKey
+    ) {
+      throw new Error(
+        "Supabase configuration is missing."
+      );
+    }
+
+    if (!window.supabase) {
+      throw new Error(
+        "Supabase JavaScript library was not loaded."
+      );
+    }
+
+    const supabaseClient =
+      window.supabase.createClient(
+        config.supabaseUrl,
+        config.supabasePublishableKey
+      );
 
     const result = await supabaseClient
       .from("products")
@@ -193,13 +446,23 @@ try {
     products = result.data?.length
       ? result.data
       : SAMPLE_PRODUCTS;
+
+    console.log(
+      "Products loaded:",
+      products.length
+    );
+
   } catch (error) {
-    console.info(
-      "Using sample catalogue until Supabase products are seeded.",
-      error.message
+    console.error(
+      "Supabase product loading failed:",
+      error
     );
 
     products = SAMPLE_PRODUCTS;
+
+    showToast(
+      "Using sample products because the catalogue could not be loaded."
+    );
   }
 
   renderFilters();
@@ -212,122 +475,225 @@ document.addEventListener("click", (event) => {
     event.target.closest("[data-category]");
 
   if (categoryButton) {
-    selectedCategory = categoryButton.dataset.category;
+    selectedCategory =
+      categoryButton.dataset.category;
+
     renderFilters();
     renderProducts();
+
+    return;
   }
 
-  const addButton = event.target.closest("[data-add]");
+  const addButton =
+    event.target.closest("[data-add]");
 
   if (addButton) {
     addToCart(addButton.dataset.add);
+    return;
   }
 
-  const plusButton = event.target.closest("[data-plus]");
+  const plusButton =
+    event.target.closest("[data-plus]");
 
   if (plusButton) {
-    updateQuantity(plusButton.dataset.plus, 1);
+    updateQuantity(
+      plusButton.dataset.plus,
+      1
+    );
+
+    return;
   }
 
-  const minusButton = event.target.closest("[data-minus]");
+  const minusButton =
+    event.target.closest("[data-minus]");
 
   if (minusButton) {
-    updateQuantity(minusButton.dataset.minus, -1);
+    updateQuantity(
+      minusButton.dataset.minus,
+      -1
+    );
+
+    return;
   }
-if (event.target.closest("[data-close-cart]")) {
+
+  if (
+    event.target.closest("[data-close-cart]")
+  ) {
     closeCart();
   }
 });
 
-$("#search").addEventListener("input", renderProducts);
+const searchInput = $("#search");
 
-$("#bag-button").addEventListener("click", openCart);
-
-$("#newsletter").addEventListener("submit", (event) => {
-  event.preventDefault();
-
-  showToast(
-    "You are on the list — a little treat is on its way."
+if (searchInput) {
+  searchInput.addEventListener(
+    "input",
+    renderProducts
   );
+}
 
-  event.target.reset();
-});
+const bagButton = $("#bag-button");
 
-$("#checkout").addEventListener("click", async () => {
-  const items = Object.values(cart);
-  const config = window.PETSHOP_CONFIG || {};
+if (bagButton) {
+  bagButton.addEventListener(
+    "click",
+    openCart
+  );
+}
 
-  if (!items.length) {
-    showToast("Add a piece to your bag first.");
-    return;
-  }
+const newsletter = $("#newsletter");
 
-  const firstName = window.prompt("First name:");
+if (newsletter) {
+  newsletter.addEventListener(
+    "submit",
+    (event) => {
+      event.preventDefault();
 
-  if (!firstName) return;
-
-  const lastName = window.prompt("Last name:");
-
-  if (!lastName) return;
-
-  const email = window.prompt("Email address:");
-
-  if (!email) return;
-
-  showToast("Creating your secure PayFast Sandbox checkout...");
-
-  try {
-    const response = await fetch(
-      config.checkoutFunctionUrl,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: config.supabasePublishableKey
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          items: items.map((item) => {
-            return {
-              productId: item.id,
-              quantity: item.quantity
-            };
-          })
-        })
-      }
-    );
-const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.error || "Checkout failed"
+      showToast(
+        "You are on the list — a little treat is on its way."
       );
+
+      event.target.reset();
     }
+  );
+}
 
-    const form = document.createElement("form");
+const checkoutButton = $("#checkout");
 
-    form.method = "POST";
-    form.action = result.action;
+if (checkoutButton) {
+  checkoutButton.addEventListener(
+    "click",
+    async () => {
+      const items = Object.values(cart);
+      const config =
+        window.PETSHOP_CONFIG || {};
 
-    Object.entries(result.fields).forEach(([name, value]) => {
-      const input = document.createElement("input");
+      if (!items.length) {
+        showToast(
+          "Add a piece to your bag first."
+        );
 
-      input.type = "hidden";
-      input.name = name;
-      input.value = value;
+        return;
+      }
 
-      form.appendChild(input);
-    });
+      if (!config.checkoutFunctionUrl) {
+        showToast(
+          "Checkout is not configured yet."
+        );
 
-    document.body.appendChild(form);
-    form.submit();
-  } catch (error) {
-    showToast(
-      error.message || "Checkout failed"
-    );
-  }
-});
+        return;
+      }
+
+      const firstName =
+        window.prompt("First name:");
+
+      if (!firstName) return;
+
+      const lastName =
+        window.prompt("Last name:");
+
+      if (!lastName) return;
+
+      const email =
+        window.prompt(
+          "Email address:"
+        );
+
+      if (!email) return;
+
+      showToast(
+        "Creating your secure PayFast Sandbox checkout..."
+      );
+
+      try {
+        const response = await fetch(
+          config.checkoutFunctionUrl,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              apikey:
+                config.supabasePublishableKey
+            },
+
+            body: JSON.stringify({
+              firstName,
+              lastName,
+              email,
+
+              items: items.map((item) => {
+                return {
+                  productId: item.id,
+                  quantity:
+                    Number(item.quantity || 0)
+                };
+              })
+            })
+          }
+        );
+
+        const result =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.error ||
+              "Checkout failed"
+          );
+        }
+
+        if (
+          !result.action ||
+          !result.fields
+        ) {
+          throw new Error(
+            "The checkout service returned an invalid response."
+          );
+        }
+
+        const form =
+          document.createElement("form");
+
+        form.method = "POST";
+        form.action = result.action;
+
+        Object.entries(
+          result.fields
+        ).forEach(
+          ([name, value]) => {
+            const input =
+              document.createElement(
+                "input"
+              );
+
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+
+            form.appendChild(input);
+          }
+        );
+
+        document.body.appendChild(form);
+
+        form.submit();
+
+      } catch (error) {
+        console.error(
+          "Checkout error:",
+          error
+        );
+
+        showToast(
+          error.message ||
+            "Checkout failed"
+        );
+      }
+    }
+  );
+}
 
 loadProducts();

@@ -1,3 +1,4 @@
+```javascript
 const pawsConfig =
   window.PETSHOP_CONFIG || {};
 
@@ -77,6 +78,7 @@ async function redirectAfterLogin(user) {
       store so the checkout process can
       continue.
     */
+
     const checkoutPending =
       sessionStorage.getItem(
         "paws-checkout-pending"
@@ -331,13 +333,24 @@ async function setupAccountPage() {
     ).value =
       profile.phone || "";
 
+    /*
+      Load this customer's orders.
+
+      The products belonging to each order
+      are stored in the "items" JSONB
+      column inside the orders table.
+    */
+
     const ordersResult =
       await pawsDb
         .from("orders")
         .select(
-          "id,status,amount_zar,created_at,order_items(name,quantity,unit_price_zar)"
+          "id,status,amount_zar,created_at,items"
         )
-        .eq("user_id", user.id)
+        .eq(
+          "user_id",
+          user.id
+        )
         .order(
           "created_at",
           {
@@ -361,21 +374,40 @@ async function setupAccountPage() {
           (order) => {
 
             const items =
-              (order.order_items || [])
+              Array.isArray(order.items)
+                ? order.items
+                : [];
+
+            const itemText =
+              items
                 .map((item) => {
-                  return `${item.name} × ${item.quantity}`;
+
+                  const quantity =
+                    Number(
+                      item.quantity
+                    ) || 1;
+
+                  return `${item.name || "Product"} × ${quantity}`;
+
                 })
                 .join(", ");
+
+            const status =
+              String(
+                order.status || "pending"
+              );
 
             return `
               <div class="data-row">
 
                 <strong>
-                  Order ${order.id.slice(0, 8).toUpperCase()}
+                  Order ${order.id
+                    .slice(0, 8)
+                    .toUpperCase()}
                 </strong>
 
                 <span class="pill">
-                  ${order.status}
+                  ${status}
                 </span>
 
                 <small>
@@ -388,7 +420,7 @@ async function setupAccountPage() {
                 </small>
 
                 <small>
-                  ${items || "Order details"}
+                  ${itemText || "Order details"}
                 </small>
 
               </div>
@@ -397,6 +429,10 @@ async function setupAccountPage() {
           }
         ).join("");
     }
+
+    /*
+      Save customer profile details.
+    */
 
     document
       .querySelector("#profile-form")
@@ -410,13 +446,18 @@ async function setupAccountPage() {
             await pawsDb
               .from("profiles")
               .update({
+
                 full_name:
                   event.target.fullName.value.trim(),
 
                 phone:
                   event.target.phone.value.trim()
+
               })
-              .eq("id", user.id);
+              .eq(
+                "id",
+                user.id
+              );
 
           authMessage(
             result.error
@@ -428,6 +469,10 @@ async function setupAccountPage() {
         }
       );
 
+    /*
+      Sign out.
+    */
+
     document
       .querySelector("#sign-out")
       ?.addEventListener(
@@ -438,6 +483,7 @@ async function setupAccountPage() {
 
           window.location.href =
             "index.html";
+
         }
       );
 
@@ -449,6 +495,7 @@ async function setupAccountPage() {
         <a href="auth.html">Sign in</a>
       </p>
     `;
+
   }
 }
 
@@ -825,6 +872,7 @@ function protectCheckout() {
         Check whether the customer is
         already signed in.
       */
+
       const sessionResult =
         await pawsDb.auth.getSession();
 
@@ -851,6 +899,7 @@ function protectCheckout() {
       /*
         Get the cart.
       */
+
       const cart =
         JSON.parse(
           localStorage.getItem(
@@ -858,8 +907,10 @@ function protectCheckout() {
           ) || "[]"
         );
 
-      if (!Array.isArray(cart) ||
-          cart.length === 0) {
+      if (
+        !Array.isArray(cart) ||
+        cart.length === 0
+      ) {
 
         alert(
           "Your cart is empty."
@@ -871,6 +922,7 @@ function protectCheckout() {
       /*
         Customer details.
       */
+
       const firstName =
         window.prompt(
           "First name:",
@@ -939,10 +991,10 @@ function protectCheckout() {
         Send the order to our secure
         Supabase Edge Function.
 
-        IMPORTANT:
-        The cart item property is
-        "id", not "productId".
+        The backend gets the customer's
+        real user_id from the access token.
       */
+
       const response =
         await fetch(
           pawsConfig.checkoutFunctionUrl,
@@ -959,6 +1011,7 @@ function protectCheckout() {
 
               Authorization:
                 `Bearer ${session.access_token}`
+
             },
 
             body: JSON.stringify({
@@ -997,16 +1050,19 @@ function protectCheckout() {
                 cart.map((item) => {
 
                   return {
+
                     id:
                       item.id,
 
                     quantity:
                       item.quantity
+
                   };
 
                 })
 
             })
+
           }
         );
 
@@ -1039,6 +1095,7 @@ function protectCheckout() {
       /*
         Build the PayFast POST form.
       */
+
       const form =
         document.createElement(
           "form"
@@ -1101,3 +1158,4 @@ document.addEventListener(
 
   }
 );
+```

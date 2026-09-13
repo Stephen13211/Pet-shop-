@@ -1,4 +1,3 @@
-```javascript
 const SAMPLE_PRODUCTS = [
   {
     id: "moss-bed",
@@ -150,14 +149,11 @@ function renderFilters() {
 }
 
 function renderProducts() {
-  const grid =
-    $("#product-grid");
+  const grid = $("#product-grid");
 
-  const pieceCount =
-    $("#piece-count");
+  const pieceCount = $("#piece-count");
 
-  const searchInput =
-    $("#search");
+  const searchInput = $("#search");
 
   if (!grid) return;
 
@@ -172,10 +168,8 @@ function renderProducts() {
     products.filter((product) => {
 
       const matchesCategory =
-        selectedCategory ===
-          "All pieces" ||
-        product.category ===
-          selectedCategory;
+        selectedCategory === "All pieces" ||
+        product.category === selectedCategory;
 
       const searchableText = `
         ${product.name || ""}
@@ -186,9 +180,7 @@ function renderProducts() {
 
       const matchesSearch =
         !searchTerm ||
-        searchableText.includes(
-          searchTerm
-        );
+        searchableText.includes(searchTerm);
 
       return (
         matchesCategory &&
@@ -206,7 +198,6 @@ function renderProducts() {
   }
 
   if (!filteredProducts.length) {
-
     grid.innerHTML = `
       <div class="empty">
         No pieces found.
@@ -301,20 +292,15 @@ function renderProducts() {
 }
 
 function renderCart() {
+  const cartItems = $("#cart-items");
 
-  const cartItems =
-    $("#cart-items");
+  const cartTotal = $("#cart-total");
 
-  const cartTotal =
-    $("#cart-total");
-
-  const bagCount =
-    $("#bag-count");
+  const bagCount = $("#bag-count");
 
   if (!cartItems) return;
 
-  const items =
-    Object.values(cart);
+  const items = Object.values(cart);
 
   const totalQuantity =
     items.reduce(
@@ -356,7 +342,6 @@ function renderCart() {
   }
 
   if (!items.length) {
-
     cartItems.innerHTML = `
       <div class="empty-cart">
 
@@ -459,7 +444,6 @@ function renderCart() {
 }
 
 function addToCart(productId) {
-
   const product =
     products.find((item) => {
       return (
@@ -469,7 +453,6 @@ function addToCart(productId) {
     });
 
   if (!product) {
-
     showToast(
       "Product could not be found."
     );
@@ -498,7 +481,6 @@ function updateQuantity(
   productId,
   change
 ) {
-
   if (!cart[productId]) return;
 
   cart[productId].quantity =
@@ -517,7 +499,6 @@ function updateQuantity(
 }
 
 function openCart() {
-
   const drawer =
     $("#cart-drawer");
 
@@ -532,7 +513,6 @@ function openCart() {
 }
 
 function closeCart() {
-
   const drawer =
     $("#cart-drawer");
 
@@ -549,24 +529,20 @@ function closeCart() {
 }
 
 async function loadProducts() {
-
   const config =
     window.PETSHOP_CONFIG || {};
 
   try {
-
     if (
       !config.supabaseUrl ||
       !config.supabasePublishableKey
     ) {
-
       throw new Error(
         "Supabase configuration is missing."
       );
     }
 
     if (!window.supabase) {
-
       throw new Error(
         "Supabase JavaScript library was not loaded."
       );
@@ -603,7 +579,6 @@ async function loadProducts() {
     );
 
   } catch (error) {
-
     console.error(
       "Supabase product loading failed:",
       error
@@ -632,7 +607,6 @@ document.addEventListener(
       );
 
     if (categoryButton) {
-
       selectedCategory =
         categoryButton.dataset.category;
 
@@ -648,7 +622,6 @@ document.addEventListener(
       );
 
     if (addButton) {
-
       addToCart(
         addButton.dataset.add
       );
@@ -662,7 +635,6 @@ document.addEventListener(
       );
 
     if (plusButton) {
-
       updateQuantity(
         plusButton.dataset.plus,
         1
@@ -677,7 +649,6 @@ document.addEventListener(
       );
 
     if (minusButton) {
-
       updateQuantity(
         minusButton.dataset.minus,
         -1
@@ -691,10 +662,8 @@ document.addEventListener(
         "[data-close-cart]"
       )
     ) {
-
       closeCart();
     }
-
   }
 );
 
@@ -702,7 +671,6 @@ const searchInput =
   $("#search");
 
 if (searchInput) {
-
   searchInput.addEventListener(
     "input",
     renderProducts
@@ -713,7 +681,6 @@ const bagButton =
   $("#bag-button");
 
 if (bagButton) {
-
   bagButton.addEventListener(
     "click",
     openCart
@@ -724,7 +691,6 @@ const newsletter =
   $("#newsletter");
 
 if (newsletter) {
-
   newsletter.addEventListener(
     "submit",
     (event) => {
@@ -753,4 +719,3 @@ if (newsletter) {
 */
 
 loadProducts();
-```

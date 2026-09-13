@@ -1,4 +1,3 @@
-```javascript
 const pawsConfig =
   window.PETSHOP_CONFIG || {};
 
@@ -21,7 +20,6 @@ function authMessage(
   message,
   selector = "#auth-message"
 ) {
-
   const element =
     document.querySelector(selector);
 
@@ -31,7 +29,6 @@ function authMessage(
 }
 
 async function getCurrentUser() {
-
   const result =
     await pawsDb.auth.getUser();
 
@@ -43,7 +40,6 @@ async function getCurrentUser() {
 }
 
 async function getProfile(userId) {
-
   const result =
     await pawsDb
       .from("profiles")
@@ -61,7 +57,6 @@ async function getProfile(userId) {
 }
 
 async function redirectAfterLogin(user) {
-
   const profile =
     await getProfile(user.id);
 
@@ -71,13 +66,6 @@ async function redirectAfterLogin(user) {
       "admin.html";
 
   } else {
-
-    /*
-      If the customer originally clicked
-      Checkout, send them back to the
-      store so the checkout process can
-      continue.
-    */
 
     const checkoutPending =
       sessionStorage.getItem(
@@ -333,14 +321,6 @@ async function setupAccountPage() {
     ).value =
       profile.phone || "";
 
-    /*
-      Load this customer's orders.
-
-      The products belonging to each order
-      are stored in the "items" JSONB
-      column inside the orders table.
-    */
-
     const ordersResult =
       await pawsDb
         .from("orders")
@@ -430,10 +410,6 @@ async function setupAccountPage() {
         ).join("");
     }
 
-    /*
-      Save customer profile details.
-    */
-
     document
       .querySelector("#profile-form")
       ?.addEventListener(
@@ -468,10 +444,6 @@ async function setupAccountPage() {
 
         }
       );
-
-    /*
-      Sign out.
-    */
 
     document
       .querySelector("#sign-out")
@@ -541,6 +513,7 @@ async function setupAdminPage() {
 
           window.location.href =
             "index.html";
+
         }
       );
 
@@ -558,6 +531,7 @@ async function setupAdminPage() {
             await pawsDb
               .from("products")
               .insert({
+
                 name:
                   form.name.value.trim(),
 
@@ -575,6 +549,7 @@ async function setupAdminPage() {
                   "Other",
 
                 active: true
+
               })
               .select()
               .single();
@@ -669,9 +644,11 @@ async function setupAdminPage() {
               await pawsDb
                 .from("products")
                 .update({
+
                   active:
                     button.dataset.active !==
                     "true"
+
                 })
                 .eq(
                   "id",
@@ -679,6 +656,7 @@ async function setupAdminPage() {
                 );
 
               await renderAdminProducts();
+
             }
           );
 
@@ -811,6 +789,7 @@ async function setupAdminPage() {
                 );
 
               await renderAdminOrders();
+
             }
           );
 
@@ -869,12 +848,22 @@ function protectCheckout() {
       event.stopImmediatePropagation();
 
       /*
-        Check whether the customer is
-        already signed in.
+        Check whether the customer
+        is already signed in.
       */
 
       const sessionResult =
         await pawsDb.auth.getSession();
+
+      if (sessionResult.error) {
+
+        alert(
+          sessionResult.error.message ||
+          "Unable to check your account."
+        );
+
+        return;
+      }
 
       const session =
         sessionResult.data.session;
@@ -897,20 +886,25 @@ function protectCheckout() {
       }
 
       /*
-        Get the cart.
+        The cart used by app.js is an
+        OBJECT, not an array.
+
+        Convert it to an array before
+        sending it to the checkout
+        function.
       */
 
       const cart =
         JSON.parse(
           localStorage.getItem(
             "moss-mud-cart"
-          ) || "[]"
+          ) || "{}"
         );
 
-      if (
-        !Array.isArray(cart) ||
-        cart.length === 0
-      ) {
+      const cartItems =
+        Object.values(cart);
+
+      if (!cartItems.length) {
 
         alert(
           "Your cart is empty."
@@ -988,156 +982,179 @@ function protectCheckout() {
         ) || "";
 
       /*
-        Send the order to our secure
+        Send the order to the secure
         Supabase Edge Function.
-
-        The backend gets the customer's
-        real user_id from the access token.
       */
 
-      const response =
-        await fetch(
-          pawsConfig.checkoutFunctionUrl,
-          {
-            method: "POST",
+      try {
 
-            headers: {
+        const response =
+          await fetch(
+            pawsConfig.checkoutFunctionUrl,
+            {
+              method: "POST",
 
-              "Content-Type":
-                "application/json",
+              headers: {
 
-              apikey:
-                pawsConfig.supabasePublishableKey,
+                "Content-Type":
+                  "application/json",
 
-              Authorization:
-                `Bearer ${session.access_token}`
+                apikey:
+                  pawsConfig.supabasePublishableKey,
 
-            },
+                Authorization:
+                  `Bearer ${session.access_token}`
 
-            body: JSON.stringify({
+              },
 
-              firstName:
-                firstName,
+              body: JSON.stringify({
 
-              lastName:
-                lastName,
+                firstName:
+                  firstName,
 
-              email:
-                session.user.email,
+                lastName:
+                  lastName,
 
-              phone:
-                phone,
+                email:
+                  session.user.email,
 
-              address:
-                address,
+                phone:
+                  phone,
 
-              suburb:
-                suburb,
+                address:
+                  address,
 
-              city:
-                city,
+                suburb:
+                  suburb,
 
-              province:
-                province,
+                city:
+                  city,
 
-              postalCode:
-                postalCode,
+                province:
+                  province,
 
-              instructions:
-                instructions,
+                postalCode:
+                  postalCode,
 
-              items:
-                cart.map((item) => {
+                instructions:
+                  instructions,
 
-                  return {
+                items:
+                  cartItems.map(
+                    (item) => {
 
-                    id:
-                      item.id,
+                      return {
 
-                    quantity:
-                      item.quantity
+                        id:
+                          item.id,
 
-                  };
+                        quantity:
+                          Number(
+                            item.quantity || 1
+                          )
 
-                })
+                      };
 
-            })
+                    }
+                  )
+
+              })
+
+            }
+          );
+
+        let result;
+
+        try {
+
+          result =
+            await response.json();
+
+        } catch {
+
+          throw new Error(
+            "The checkout server returned an invalid response."
+          );
+        }
+
+        if (!response.ok) {
+
+          throw new Error(
+            result.error ||
+            "Checkout failed."
+          );
+        }
+
+        if (
+          !result.action ||
+          !result.fields
+        ) {
+
+          throw new Error(
+            "The checkout service returned an invalid response."
+          );
+        }
+
+        /*
+          Build the PayFast POST form.
+        */
+
+        const form =
+          document.createElement(
+            "form"
+          );
+
+        form.method =
+          "POST";
+
+        form.action =
+          result.action;
+
+        Object.entries(
+          result.fields
+        ).forEach(
+          ([name, value]) => {
+
+            const input =
+              document.createElement(
+                "input"
+              );
+
+            input.type =
+              "hidden";
+
+            input.name =
+              name;
+
+            input.value =
+              value;
+
+            form.appendChild(
+              input
+            );
 
           }
         );
 
-      let result;
-
-      try {
-
-        result =
-          await response.json();
-
-      } catch {
-
-        alert(
-          "The checkout server returned an invalid response."
+        document.body.appendChild(
+          form
         );
 
-        return;
-      }
+        form.submit();
 
-      if (!response.ok) {
+      } catch (error) {
+
+        console.error(
+          "Checkout error:",
+          error
+        );
 
         alert(
-          result.error ||
+          error.message ||
           "Checkout failed."
         );
 
-        return;
       }
-
-      /*
-        Build the PayFast POST form.
-      */
-
-      const form =
-        document.createElement(
-          "form"
-        );
-
-      form.method =
-        "POST";
-
-      form.action =
-        result.action;
-
-      Object.entries(
-        result.fields
-      ).forEach(
-        ([name, value]) => {
-
-          const input =
-            document.createElement(
-              "input"
-            );
-
-          input.type =
-            "hidden";
-
-          input.name =
-            name;
-
-          input.value =
-            value;
-
-          form.appendChild(
-            input
-          );
-
-        }
-      );
-
-      document.body.appendChild(
-        form
-      );
-
-      form.submit();
 
     },
     true
@@ -1158,4 +1175,3 @@ document.addEventListener(
 
   }
 );
-```

@@ -432,9 +432,32 @@ async function loadProducts() {
       );
 
     const result = await supabaseClient
-      .from("products")
-      .select(
-        "id,sku,name,description,image_url,price_zar,category,badge"
+  .from("products")
+  .select("*");
+
+document.body.insertAdjacentHTML(
+  "afterbegin",
+  `<div style="
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    z-index:999999;
+    background:#111;
+    color:white;
+    padding:20px;
+    font-size:16px;
+    line-height:1.5;
+  ">
+    Supabase test:<br>
+    Error: ${result.error ? result.error.message : "NONE"}<br>
+    Products returned: ${result.data ? result.data.length : "NO DATA"}
+  </div>`
+);
+
+if (result.error) {
+  throw result.error;
+}
       )
       .eq("active", true)
       .order("name");

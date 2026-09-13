@@ -440,10 +440,27 @@ async function loadProducts() {
       .order("name");
 
     if (result.error) {
-  console.error("SUPABASE ERROR:", result.error);
-  showToast("Supabase error: " + result.error.message);
+  document.body.insertAdjacentHTML(
+    "afterbegin",
+    `<div style="
+      position:fixed;
+      top:0;
+      left:0;
+      right:0;
+      z-index:999999;
+      background:#8b0000;
+      color:white;
+      padding:20px;
+      font-size:16px;
+      line-height:1.5;
+    ">
+      SUPABASE ERROR:<br>
+      ${result.error.message}
+    </div>`
+  );
+
   throw result.error;
-    }
+}
 
     products = result.data?.length
       ? result.data

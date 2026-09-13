@@ -440,7 +440,9 @@ async function loadProducts() {
       .order("name");
 
     if (result.error) {
-      throw result.error;
+  console.error("SUPABASE ERROR:", result.error);
+  showToast("Supabase error: " + result.error.message);
+  throw result.error;
     }
 
     products = result.data?.length

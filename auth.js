@@ -71,8 +71,32 @@ async function redirectAfterLogin(user) {
 
   } else {
 
-    window.location.href =
-      "account.html";
+    /*
+      If the customer originally clicked
+      Checkout, send them back to the
+      store so the checkout process can
+      continue.
+    */
+    const checkoutPending =
+      sessionStorage.getItem(
+        "paws-checkout-pending"
+      );
+
+    if (checkoutPending === "true") {
+
+      sessionStorage.removeItem(
+        "paws-checkout-pending"
+      );
+
+      window.location.href =
+        "index.html";
+
+    } else {
+
+      window.location.href =
+        "account.html";
+
+    }
   }
 }
 
@@ -188,7 +212,9 @@ async function setupAuthPage() {
 
       submitButton.disabled = true;
 
-      authMessage("Please wait...");
+      authMessage(
+        "Please wait..."
+      );
 
       try {
 
@@ -240,8 +266,8 @@ async function setupAuthPage() {
 
           if (result.data.session) {
 
-            authMessage(
-              "Account created."
+            await redirectAfterLogin(
+              result.data.user
             );
 
           } else {
@@ -795,6 +821,10 @@ function protectCheckout() {
       event.preventDefault();
       event.stopImmediatePropagation();
 
+      /*
+        Check whether the customer is
+        already signed in.
+      */
       const sessionResult =
         await pawsDb.auth.getSession();
 
@@ -802,6 +832,11 @@ function protectCheckout() {
         sessionResult.data.session;
 
       if (!session) {
+
+        sessionStorage.setItem(
+          "paws-checkout-pending",
+          "true"
+        );
 
         alert(
           "Please sign in or create an account before checkout."
@@ -813,20 +848,34 @@ function protectCheckout() {
         return;
       }
 
-      const items =
-        Object.values(
-          JSON.parse(
-            localStorage.getItem(
-              "paws-incorporated-cart"
-            ) || "{}"
-          )
+      /*
+        Get the cart.
+      */
+      const cart =
+        JSON.parse(
+          localStorage.getItem(
+            "moss-mud-cart"
+          ) || "[]"
         );
 
+      if (!Array.isArray(cart) ||
+          cart.length === 0) {
+
+        alert(
+          "Your cart is empty."
+        );
+
+        return;
+      }
+
+      /*
+        Customer details.
+      */
       const firstName =
         window.prompt(
           "First name:",
-          session.user.user_metadata?.full_name ||
-          ""
+          session.user.user_metadata?.full_name
+            ?.split(" ")[0] || ""
         );
 
       if (!firstName) return;
@@ -838,6 +887,62 @@ function protectCheckout() {
 
       if (!lastName) return;
 
+      const phone =
+        window.prompt(
+          "Phone number:"
+        );
+
+      if (!phone) return;
+
+      const address =
+        window.prompt(
+          "Street address:"
+        );
+
+      if (!address) return;
+
+      const suburb =
+        window.prompt(
+          "Suburb:"
+        );
+
+      if (!suburb) return;
+
+      const city =
+        window.prompt(
+          "City:"
+        );
+
+      if (!city) return;
+
+      const province =
+        window.prompt(
+          "Province:"
+        );
+
+      if (!province) return;
+
+      const postalCode =
+        window.prompt(
+          "Postal code:"
+        );
+
+      if (!postalCode) return;
+
+      const instructions =
+        window.prompt(
+          "Delivery instructions (optional):",
+          ""
+        ) || "";
+
+      /*
+        Send the order to our secure
+        Supabase Edge Function.
+
+        IMPORTANT:
+        The cart item property is
+        "id", not "productId".
+      */
       const response =
         await fetch(
           pawsConfig.checkoutFunctionUrl,
@@ -845,6 +950,7 @@ function protectCheckout() {
             method: "POST",
 
             headers: {
+
               "Content-Type":
                 "application/json",
 
@@ -857,17 +963,41 @@ function protectCheckout() {
 
             body: JSON.stringify({
 
-              firstName,
-              lastName,
+              firstName:
+                firstName,
+
+              lastName:
+                lastName,
 
               email:
                 session.user.email,
 
+              phone:
+                phone,
+
+              address:
+                address,
+
+              suburb:
+                suburb,
+
+              city:
+                city,
+
+              province:
+                province,
+
+              postalCode:
+                postalCode,
+
+              instructions:
+                instructions,
+
               items:
-                items.map((item) => {
+                cart.map((item) => {
 
                   return {
-                    productId:
+                    id:
                       item.id,
 
                     quantity:
@@ -880,8 +1010,21 @@ function protectCheckout() {
           }
         );
 
-      const result =
-        await response.json();
+      let result;
+
+      try {
+
+        result =
+          await response.json();
+
+      } catch {
+
+        alert(
+          "The checkout server returned an invalid response."
+        );
+
+        return;
+      }
 
       if (!response.ok) {
 
@@ -893,13 +1036,19 @@ function protectCheckout() {
         return;
       }
 
+      /*
+        Build the PayFast POST form.
+      */
       const form =
         document.createElement(
           "form"
         );
 
-      form.method = "POST";
-      form.action = result.action;
+      form.method =
+        "POST";
+
+      form.action =
+        result.action;
 
       Object.entries(
         result.fields
@@ -911,15 +1060,25 @@ function protectCheckout() {
               "input"
             );
 
-          input.type = "hidden";
-          input.name = name;
-          input.value = value;
+          input.type =
+            "hidden";
 
-          form.appendChild(input);
+          input.name =
+            name;
+
+          input.value =
+            value;
+
+          form.appendChild(
+            input
+          );
+
         }
       );
 
-      document.body.appendChild(form);
+      document.body.appendChild(
+        form
+      );
 
       form.submit();
 
@@ -933,8 +1092,11 @@ document.addEventListener(
   () => {
 
     setupAuthPage();
+
     setupAccountPage();
+
     setupAdminPage();
+
     protectCheckout();
 
   }

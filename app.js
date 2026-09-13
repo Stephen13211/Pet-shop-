@@ -183,7 +183,6 @@ function renderProducts() {
         No pieces found.
       </div>
     `;
-
     return;
   }
 
@@ -286,7 +285,6 @@ function renderCart() {
         </p>
       </div>
     `;
-
     return;
   }
 
@@ -409,6 +407,31 @@ function closeCart() {
 async function loadProducts() {
   const config = window.PETSHOP_CONFIG || {};
 
+  const diagnostic = document.createElement("div");
+
+  diagnostic.id = "supabase-diagnostic";
+
+  diagnostic.style.cssText = `
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    z-index:999999;
+    background:#111;
+    color:white;
+    padding:20px;
+    font-size:16px;
+    line-height:1.6;
+    font-family:Arial,sans-serif;
+  `;
+
+  diagnostic.innerHTML = `
+    <strong>Supabase test</strong><br>
+    Connecting...
+  `;
+
+  document.body.prepend(diagnostic);
+
   try {
     if (
       !config.supabaseUrl ||
@@ -438,8 +461,21 @@ async function loadProducts() {
       .order("name");
 
     if (result.error) {
+      diagnostic.innerHTML = `
+        <strong>SUPABASE ERROR</strong><br>
+        ${escapeHtml(result.error.message)}
+        <br><br>
+        Products returned: 0
+      `;
+
       throw result.error;
     }
+
+    diagnostic.innerHTML = `
+      <strong>SUPABASE SUCCESS</strong><br>
+      Error: NONE<br>
+      Products returned: ${result.data ? result.data.length : 0}
+    `;
 
     products = result.data?.length
       ? result.data
@@ -498,7 +534,6 @@ document.addEventListener("click", (event) => {
       plusButton.dataset.plus,
       1
     );
-
     return;
   }
 
@@ -510,7 +545,6 @@ document.addEventListener("click", (event) => {
       minusButton.dataset.minus,
       -1
     );
-
     return;
   }
 
@@ -570,7 +604,6 @@ if (checkoutButton) {
         showToast(
           "Add a piece to your bag first."
         );
-
         return;
       }
 
@@ -578,7 +611,6 @@ if (checkoutButton) {
         showToast(
           "Checkout is not configured yet."
         );
-
         return;
       }
 
@@ -593,9 +625,7 @@ if (checkoutButton) {
       if (!lastName) return;
 
       const email =
-        window.prompt(
-          "Email address:"
-        );
+        window.prompt("Email address:");
 
       if (!email) return;
 

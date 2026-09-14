@@ -1547,3 +1547,4 @@ document.addEventListener(
   }
 );
 ```
+console.log("PAWS AUTH.JS IS RUNNING");

@@ -1032,6 +1032,619 @@ async function setupAdminPage() {
 
 
 /* =========================================================
+   GUEST CHECKOUT
+   ========================================================= */
+
+function setupGuestCheckout() {
+
+  const checkoutButton =
+    document.querySelector("#checkout");
+
+  if (!checkoutButton) return;
+
+  checkoutButton.addEventListener(
+    "click",
+    (event) => {
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const existing =
+        document.querySelector(
+          "#guest-checkout"
+        );
+
+      if (existing) {
+        existing.remove();
+      }
+
+      const checkoutBox =
+        document.createElement("div");
+
+      checkoutBox.id =
+        "guest-checkout";
+
+      checkoutBox.innerHTML = `
+
+        <div class="guest-checkout-overlay">
+
+          <div class="guest-checkout-card">
+
+            <button
+              type="button"
+              id="close-guest-checkout"
+              class="guest-close"
+            >
+              ×
+            </button>
+
+            <p class="eyebrow-text">
+              Checkout
+            </p>
+
+            <h2>
+              Delivery details
+            </h2>
+
+            <p>
+              No account is required. Enter your details
+              below and continue to PayFast.
+            </p>
+
+            <form id="guest-checkout-form">
+
+              <label>
+                Full name
+                <input
+                  name="fullName"
+                  type="text"
+                  required
+                  autocomplete="name"
+                  placeholder="John Smith"
+                >
+              </label>
+
+              <label>
+                Email
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  autocomplete="email"
+                  placeholder="you@example.com"
+                >
+              </label>
+
+              <label>
+                Phone number
+                <input
+                  name="phone"
+                  type="tel"
+                  required
+                  autocomplete="tel"
+                  placeholder="082 123 4567"
+                >
+              </label>
+
+              <label>
+                Street address
+                <input
+                  name="address"
+                  type="text"
+                  required
+                  autocomplete="street-address"
+                  placeholder="12 Example Street"
+                >
+              </label>
+
+              <label>
+                Suburb
+                <input
+                  name="suburb"
+                  type="text"
+                  required
+                  placeholder="Summerstrand"
+                >
+              </label>
+
+              <label>
+                City
+                <input
+                  name="city"
+                  type="text"
+                  required
+                  placeholder="Gqeberha"
+                >
+              </label>
+
+              <label>
+                Province
+                <input
+                  name="province"
+                  type="text"
+                  required
+                  placeholder="Eastern Cape"
+                >
+              </label>
+
+              <label>
+                Postal code
+                <input
+                  name="postalCode"
+                  type="text"
+                  required
+                  autocomplete="postal-code"
+                  placeholder="6001"
+                >
+              </label>
+
+              <label>
+                Delivery instructions
+                <textarea
+                  name="instructions"
+                  placeholder="Optional delivery instructions"
+                ></textarea>
+              </label>
+
+              <p
+                id="guest-checkout-message"
+                class="auth-message"
+              ></p>
+
+              <button
+                type="submit"
+                class="button primary"
+                id="guest-pay-button"
+              >
+                Continue to PayFast
+              </button>
+
+            </form>
+
+          </div>
+
+        </div>
+
+      `;
+
+      document.body.appendChild(
+        checkoutBox
+      );
+
+
+      /* ---------------------------------------------------
+         CLOSE CHECKOUT
+         --------------------------------------------------- */
+
+      document
+        .querySelector(
+          "#close-guest-checkout"
+        )
+        ?.addEventListener(
+          "click",
+          () => {
+
+            checkoutBox.remove();
+
+          }
+        );
+
+
+      /* ---------------------------------------------------
+         SUBMIT CHECKOUT
+         --------------------------------------------------- */
+
+      document
+        .querySelector(
+          "#guest-checkout-form"
+        )
+        ?.addEventListener(
+          "submit",
+          async (submitEvent) => {
+
+            submitEvent.preventDefault();
+
+            const form =
+              submitEvent.target;
+
+            const button =
+              document.querySelector(
+                "#guest-pay-button"
+              );
+
+            const message =
+              document.querySelector(
+                "#guest-checkout-message"
+              );
+
+
+            button.disabled =
+              true;
+
+            button.textContent =
+              "Preparing payment...";
+
+            message.textContent =
+              "";
+
+
+            /* ---------------------------------------------
+               LOAD CART
+               --------------------------------------------- */
+
+            const cart =
+              JSON.parse(
+                localStorage.getItem(
+                  "moss-mud-cart"
+                ) || "{}"
+              );
+
+            const cartItems =
+              Object.values(cart);
+
+
+            if (!cartItems.length) {
+
+              message.textContent =
+                "Your cart is empty.";
+
+              button.disabled =
+                false;
+
+              button.textContent =
+                "Continue to PayFast";
+
+              return;
+
+            }
+
+
+            /* ---------------------------------------------
+               CUSTOMER DETAILS
+               --------------------------------------------- */
+
+            const fullName =
+              form.fullName.value.trim();
+
+            const nameParts =
+              fullName.split(/\s+/);
+
+            const firstName =
+              nameParts.shift() || "";
+
+            const lastName =
+              nameParts.join(" ") || "";
+
+
+            /* ---------------------------------------------
+               SEND TO CHECKOUT FUNCTION
+               --------------------------------------------- */
+
+            try {
+
+              const response =
+                await fetch(
+                  pawsConfig.checkoutFunctionUrl,
+                  {
+                    method: "POST",
+
+                    headers: {
+
+                      "Content-Type":
+                        "application/json",
+
+                      apikey:
+                        pawsConfig.supabasePublishableKey
+
+                    },
+
+                    body:
+                      JSON.stringify({
+
+                        firstName:
+                          firstName,
+
+                        lastName:
+                          lastName,
+
+                        email:
+                          form.email.value.trim(),
+
+                        phone:
+                          form.phone.value.trim(),
+
+                        address:
+                          form.address.value.trim(),
+
+                        suburb:
+                          form.suburb.value.trim(),
+
+                        city:
+                          form.city.value.trim(),
+
+                        province:
+                          form.province.value.trim(),
+
+                        postalCode:
+                          form.postalCode.value.trim(),
+
+                        instructions:
+                          form.instructions.value.trim(),
+
+                        items:
+                          cartItems.map(
+                            (item) => {
+
+                              return {
+
+                                id:
+                                  item.id,
+
+                                quantity:
+                                  Number(
+                                    item.quantity || 1
+                                  )
+
+                              };
+
+                            }
+                          )
+
+                      })
+
+                  }
+                );
+
+
+              let result;
+
+              try {
+
+                result =
+                  await response.json();
+
+              } catch {
+
+                throw new Error(
+                  "The checkout server returned an invalid response."
+                );
+
+              }
+
+
+              if (!response.ok) {
+
+                throw new Error(
+                  result.error ||
+                  "Checkout failed."
+                );
+
+              }
+
+
+              if (
+                !result.action ||
+                !result.fields
+              ) {
+
+                throw new Error(
+                  "The checkout service returned an invalid response."
+                );
+
+              }
+
+
+              /* -------------------------------------------
+                 SEND CUSTOMER TO PAYFAST
+                 ------------------------------------------- */
+
+              const payfastForm =
+                document.createElement(
+                  "form"
+                );
+
+              payfastForm.method =
+                "POST";
+
+              payfastForm.action =
+                result.action;
+
+
+              Object.entries(
+                result.fields
+              ).forEach(
+                ([name, value]) => {
+
+                  const input =
+                    document.createElement(
+                      "input"
+                    );
+
+                  input.type =
+                    "hidden";
+
+                  input.name =
+                    name;
+
+                  input.value =
+                    value;
+
+                  payfastForm.appendChild(
+                    input
+                  );
+
+                }
+              );
+
+
+              document.body.appendChild(
+                payfastForm
+              );
+
+              payfastForm.submit();
+
+
+            } catch (error) {
+
+              console.error(
+                "Guest checkout error:",
+                error
+              );
+
+              message.textContent =
+                error.message ||
+                "Unable to start payment.";
+
+              button.disabled =
+                false;
+
+              button.textContent =
+                "Continue to PayFast";
+
+            }
+
+          }
+        );
+
+    }
+  );
+}
+
+
+/* =========================================================
+   GUEST CHECKOUT STYLES
+   ========================================================= */
+
+function setupGuestCheckoutStyles() {
+
+  if (
+    document.querySelector(
+      "#guest-checkout-styles"
+    )
+  ) {
+    return;
+  }
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "guest-checkout-styles";
+
+  style.textContent = `
+
+    .guest-checkout-overlay {
+
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+
+      background: rgba(0, 0, 0, 0.65);
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 20px;
+
+      overflow-y: auto;
+
+    }
+
+    .guest-checkout-card {
+
+      position: relative;
+
+      width: min(
+        100%,
+        520px
+      );
+
+      max-height: 90vh;
+
+      overflow-y: auto;
+
+      background: white;
+
+      border-radius: 18px;
+
+      padding: 28px;
+
+      box-sizing: border-box;
+
+    }
+
+    .guest-checkout-card h2 {
+
+      margin-top: 0;
+
+    }
+
+    .guest-checkout-card label {
+
+      display: grid;
+
+      gap: 7px;
+
+      margin-bottom: 14px;
+
+      font-weight: 600;
+
+    }
+
+    .guest-checkout-card input,
+    .guest-checkout-card textarea {
+
+      width: 100%;
+
+      box-sizing: border-box;
+
+      padding: 12px;
+
+      border: 1px solid #ccc;
+
+      border-radius: 8px;
+
+      font: inherit;
+
+    }
+
+    .guest-checkout-card textarea {
+
+      min-height: 80px;
+
+      resize: vertical;
+
+    }
+
+    .guest-close {
+
+      position: absolute;
+
+      top: 12px;
+
+      right: 14px;
+
+      border: 0;
+
+      background: transparent;
+
+      font-size: 30px;
+
+      cursor: pointer;
+
+    }
+
+  `;
+
+  document.head.appendChild(
+    style
+  );
+
+}
+
+
+/* =========================================================
    START EVERYTHING
    ========================================================= */
 
@@ -1044,6 +1657,10 @@ document.addEventListener(
     setupAccountPage();
 
     setupAdminPage();
+
+    setupGuestCheckoutStyles();
+
+    setupGuestCheckout();
 
   }
 );

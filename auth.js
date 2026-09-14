@@ -1,3 +1,7 @@
+document.body.insertAdjacentHTML(
+  "afterbegin",
+  '<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:20px;z-index:99999;font-size:18px;">AUTH.JS IS RUNNING</div>'
+);
 console.log("PAWS AUTH.JS IS RUNNING");
 alert("AUTH JS STARTED");
 

@@ -1,4 +1,4 @@
-```javascript
+alert("AUTH JS STARTED");```javascript
 const pawsConfig =
   window.PETSHOP_CONFIG || {};
 

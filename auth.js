@@ -16,6 +16,7 @@ const pawsDb =
   );
 
 window.PAWS_DB = pawsDb;
+alert("SUPABASE CLIENT CREATED");
 
 
 /* =========================================================

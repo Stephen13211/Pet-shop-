@@ -1,3 +1,4 @@
+console.log("PAWS AUTH.JS IS RUNNING");
 alert("AUTH JS STARTED");
 
 const pawsConfig =

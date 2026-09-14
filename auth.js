@@ -1,6 +1,8 @@
-alert("AUTH JS STARTED");```javascript
+alert("AUTH JS STARTED");
+
 const pawsConfig =
-  window.PETSHOP_CONFIG || {};
+window.PETSHOP_CONFIG || {};
+
 
 const pawsDb =
   window.supabase.createClient(

@@ -1,3 +1,4 @@
+alert("APP.JS IS RUNNING");
 const SAMPLE_PRODUCTS = [
 {
 id: "moss-bed",

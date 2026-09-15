@@ -1,3 +1,4 @@
+```js
 const SAMPLE_PRODUCTS = [
   {
     id: "moss-bed",
@@ -706,16 +707,260 @@ if (newsletter) {
   );
 }
 
+
 /*
-  Checkout is handled by auth.js.
+  PayFast return handling.
 
-  auth.js checks whether the customer
-  is signed in and then securely sends
-  the order to the Supabase Edge Function.
+  This runs when the customer comes
+  back to the store after PayFast.
+*/
 
-  Do NOT add another checkout handler
-  here because that would bypass the
-  login protection.
+function handlePaymentReturn() {
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  const payment =
+    params.get("payment");
+
+
+  /*
+    Successful payment.
+  */
+
+  if (payment === "success") {
+
+    /*
+      Clear the cart in memory.
+    */
+
+    cart = {};
+
+
+    /*
+      Clear the saved cart from
+      the customer's browser.
+    */
+
+    localStorage.removeItem(
+      "moss-mud-cart"
+    );
+
+
+    /*
+      Remember that we need to show
+      the congratulations message.
+    */
+
+    sessionStorage.setItem(
+      "paws-payment-success",
+      "true"
+    );
+
+
+    /*
+      Remove ?payment=success from
+      the browser address bar.
+    */
+
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname
+    );
+
+
+    /*
+      Immediately update the cart.
+    */
+
+    renderCart();
+
+
+    /*
+      Show the congratulations message.
+    */
+
+    showPaymentSuccessMessage();
+
+    return;
+  }
+
+
+  /*
+    Cancelled payment.
+
+    We leave the cart untouched.
+  */
+
+  if (payment === "cancelled") {
+
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname
+    );
+
+  }
+}
+
+
+/*
+  Congratulations message.
+*/
+
+function showPaymentSuccessMessage() {
+
+  /*
+    Only show the message when a
+    successful PayFast return occurred.
+  */
+
+  if (
+    sessionStorage.getItem(
+      "paws-payment-success"
+    ) !== "true"
+  ) {
+    return;
+  }
+
+
+  /*
+    Remove the flag immediately so
+    refreshing the page won't show the
+    message again.
+  */
+
+  sessionStorage.removeItem(
+    "paws-payment-success"
+  );
+
+
+  /*
+    Create the message.
+  */
+
+  const message =
+    document.createElement("div");
+
+  message.id =
+    "payment-success-message";
+
+  message.innerHTML = `
+    <div
+      style="
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 40px);
+        max-width: 520px;
+        background: white;
+        border-radius: 18px;
+        padding: 28px;
+        box-shadow: 0 15px 45px rgba(0,0,0,0.18);
+        z-index: 99999;
+        text-align: center;
+        border: 1px solid rgba(0,0,0,0.08);
+      "
+    >
+
+      <div
+        style="
+          font-size: 42px;
+          margin-bottom: 10px;
+        "
+      >
+        🎉
+      </div>
+
+      <h2
+        style="
+          margin: 0 0 10px;
+          font-size: 26px;
+        "
+      >
+        Congratulations on your purchase!
+      </h2>
+
+      <p
+        style="
+          margin: 0 0 20px;
+          line-height: 1.6;
+        "
+      >
+        Your payment was successful and
+        your order has been received.
+      </p>
+
+      <button
+        id="close-payment-success"
+        type="button"
+        style="
+          border: none;
+          border-radius: 10px;
+          padding: 12px 22px;
+          cursor: pointer;
+          font-size: 16px;
+          font-weight: 600;
+        "
+      >
+        Continue shopping
+      </button>
+
+    </div>
+  `;
+
+  document.body.appendChild(
+    message
+  );
+
+
+  /*
+    Close the message.
+  */
+
+  const closeButton =
+    document.querySelector(
+      "#close-payment-success"
+    );
+
+  if (closeButton) {
+
+    closeButton.addEventListener(
+      "click",
+      () => {
+
+        message.remove();
+
+      }
+    );
+
+  }
+}
+
+
+/*
+  Load the store.
 */
 
 loadProducts();
+
+
+/*
+  Wait until the page has loaded,
+  then check whether PayFast sent
+  the customer back.
+*/
+
+window.addEventListener(
+  "load",
+  () => {
+
+    handlePaymentReturn();
+
+  }
+);
+```

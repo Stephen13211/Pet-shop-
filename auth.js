@@ -1,4 +1,4 @@
-```javascript
+
 const pawsConfig =
   window.PETSHOP_CONFIG || {};
 

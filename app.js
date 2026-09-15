@@ -1,3 +1,4 @@
+alert("TEST 123");
 alert("APP.JS IS RUNNING");
 const SAMPLE_PRODUCTS = [
 {

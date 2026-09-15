@@ -719,3 +719,209 @@ if (newsletter) {
 */
 
 loadProducts();
+
+/* =========================================
+   PAYFAST RETURN HANDLING
+   ========================================= */
+
+function handlePaymentReturn() {
+  const params = new URLSearchParams(
+    window.location.search
+  );
+
+  const payment =
+    params.get("payment");
+
+  /* -----------------------------
+     SUCCESSFUL PAYMENT
+     ----------------------------- */
+
+  if (payment === "success") {
+
+    // Clear the shopping cart
+    cart = {};
+
+    localStorage.removeItem(
+      "moss-mud-cart"
+    );
+
+    // Update the cart display
+    renderCart();
+
+    // Show congratulations message
+    showPaymentSuccess();
+
+    // Remove ?payment=success
+    // from the browser URL
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname
+    );
+  }
+
+  /* -----------------------------
+     CANCELLED PAYMENT
+     ----------------------------- */
+
+  if (payment === "cancelled") {
+
+    // Remove ?payment=cancelled
+    // from the browser URL
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname
+    );
+
+    showToast(
+      "Your payment was cancelled."
+    );
+  }
+}
+
+
+/* =========================================
+   SUCCESS MESSAGE
+   ========================================= */
+
+function showPaymentSuccess() {
+
+  const existing =
+    document.getElementById(
+      "payment-success"
+    );
+
+  if (existing) {
+    existing.remove();
+  }
+
+  const message =
+    document.createElement("div");
+
+  message.id =
+    "payment-success";
+
+  message.innerHTML = `
+    <div
+      style="
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,0.55);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        z-index:99999;
+        padding:20px;
+      "
+    >
+
+      <div
+        style="
+          background:#fff;
+          max-width:500px;
+          width:100%;
+          border-radius:20px;
+          padding:40px 30px;
+          text-align:center;
+          box-shadow:0 20px 60px rgba(0,0,0,0.25);
+        "
+      >
+
+        <div
+          style="
+            width:64px;
+            height:64px;
+            margin:0 auto 20px;
+            border-radius:50%;
+            background:#3e4e3b;
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:32px;
+          "
+        >
+          ✓
+        </div>
+
+        <p
+          style="
+            margin:0 0 10px;
+            font-size:13px;
+            letter-spacing:2px;
+            text-transform:uppercase;
+            opacity:.65;
+          "
+        >
+          Order confirmed
+        </p>
+
+        <h2
+          style="
+            margin:0 0 15px;
+            font-size:30px;
+          "
+        >
+          Congratulations on your purchase!
+        </h2>
+
+        <p
+          style="
+            margin:0 0 25px;
+            line-height:1.6;
+            opacity:.75;
+          "
+        >
+          Thank you for shopping with
+          Paws Incorporated.
+          Your payment was successful and
+          your order has been received.
+        </p>
+
+        <button
+          id="success-continue"
+          type="button"
+          style="
+            border:0;
+            border-radius:999px;
+            padding:14px 25px;
+            background:#3e4e3b;
+            color:white;
+            cursor:pointer;
+            font-size:15px;
+          "
+        >
+          Continue shopping
+        </button>
+
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(
+    message
+  );
+
+  const continueButton =
+    document.getElementById(
+      "success-continue"
+    );
+
+  if (continueButton) {
+    continueButton.addEventListener(
+      "click",
+      () => {
+        message.remove();
+      }
+    );
+  }
+}
+
+
+/* =========================================
+   CHECK FOR PAYFAST RETURN
+   ========================================= */
+
+handlePaymentReturn();

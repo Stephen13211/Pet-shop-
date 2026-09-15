@@ -1,4 +1,3 @@
-Here's the current code
 
 const pawsConfig =
   window.PETSHOP_CONFIG || {};
@@ -1219,37 +1218,18 @@ function setupGuestCheckout() {
                 ></textarea>
               </label>
 
-              <div class="checkout-summary">
+              <p
+                id="guest-checkout-message"
+                class="auth-message"
+              ></p>
 
-  <div class="checkout-summary-row">
-    <span>Subtotal</span>
-    <strong id="guest-subtotal">R0</strong>
-  </div>
-
-  <div class="checkout-summary-row">
-    <span>Shipping</span>
-    <strong>R100</strong>
-  </div>
-
-  <div class="checkout-summary-total">
-    <span>Total</span>
-    <strong id="guest-total">R100</strong>
-  </div>
-
-</div>
-
-<p
-  id="guest-checkout-message"
-  class="auth-message"
-></p>
-
-<button
-  type="submit"
-  class="button primary"
-  id="guest-pay-button"
->
-  Continue to PayFast
-</button>
+              <button
+                type="submit"
+                class="button primary"
+                id="guest-pay-button"
+              >
+                Continue to PayFast
+              </button>
 
             </form>
 
@@ -1263,69 +1243,6 @@ function setupGuestCheckout() {
       document.body.appendChild(
         checkoutBox
       );
-      /* ---------------------------------------------------
-   CALCULATE CHECKOUT TOTAL
-   --------------------------------------------------- */
-
-const checkoutCart =
-  JSON.parse(
-    localStorage.getItem(
-      "moss-mud-cart"
-    ) || "{}"
-  );
-
-const checkoutItems =
-  Object.values(checkoutCart);
-
-const checkoutSubtotal =
-  checkoutItems.reduce(
-    (total, item) => {
-
-      return (
-        total +
-        Number(
-          item.price_zar || 0
-        ) *
-          Number(
-            item.quantity || 1
-          )
-      );
-
-    },
-    0
-  );
-
-const SHIPPING_COST = 100;
-
-const checkoutTotal =
-  checkoutSubtotal +
-  SHIPPING_COST;
-
-const subtotalElement =
-  document.querySelector(
-    "#guest-subtotal"
-  );
-
-const totalElement =
-  document.querySelector(
-    "#guest-total"
-  );
-
-if (subtotalElement) {
-
-  subtotalElement.textContent =
-    `R${checkoutSubtotal.toLocaleString(
-      "en-ZA"
-    )}`;
-}
-
-if (totalElement) {
-
-  totalElement.textContent =
-    `R${checkoutTotal.toLocaleString(
-      "en-ZA"
-    )}`;
-}
 
 
       /* ---------------------------------------------------

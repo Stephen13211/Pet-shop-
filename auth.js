@@ -1,3 +1,4 @@
+Here's the current code
 
 const pawsConfig =
   window.PETSHOP_CONFIG || {};
@@ -1262,6 +1263,69 @@ function setupGuestCheckout() {
       document.body.appendChild(
         checkoutBox
       );
+      /* ---------------------------------------------------
+   CALCULATE CHECKOUT TOTAL
+   --------------------------------------------------- */
+
+const checkoutCart =
+  JSON.parse(
+    localStorage.getItem(
+      "moss-mud-cart"
+    ) || "{}"
+  );
+
+const checkoutItems =
+  Object.values(checkoutCart);
+
+const checkoutSubtotal =
+  checkoutItems.reduce(
+    (total, item) => {
+
+      return (
+        total +
+        Number(
+          item.price_zar || 0
+        ) *
+          Number(
+            item.quantity || 1
+          )
+      );
+
+    },
+    0
+  );
+
+const SHIPPING_COST = 100;
+
+const checkoutTotal =
+  checkoutSubtotal +
+  SHIPPING_COST;
+
+const subtotalElement =
+  document.querySelector(
+    "#guest-subtotal"
+  );
+
+const totalElement =
+  document.querySelector(
+    "#guest-total"
+  );
+
+if (subtotalElement) {
+
+  subtotalElement.textContent =
+    `R${checkoutSubtotal.toLocaleString(
+      "en-ZA"
+    )}`;
+}
+
+if (totalElement) {
+
+  totalElement.textContent =
+    `R${checkoutTotal.toLocaleString(
+      "en-ZA"
+    )}`;
+}
 
 
       /* ---------------------------------------------------

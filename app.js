@@ -1,4 +1,4 @@
-```js
+
 const SAMPLE_PRODUCTS = [
   {
     id: "moss-bed",

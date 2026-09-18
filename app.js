@@ -121,11 +121,12 @@ return String(value ?? "").replace(
 /[&<>'"]/g,
 (character) => {
 return {
-"&": "&",
-"<": "<",
-">": ">",
-"'": "'",
+"&": "&amp;",
+"<": "&lt;",
+">": "&gt;",
+"'": "&#39;",
 '"': "&quot;"
+          
 }[character];
 }
 );

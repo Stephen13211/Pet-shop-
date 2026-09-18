@@ -92,6 +92,10 @@ SHIPPING
 
 const SHIPPING_FEE = 89;
 
+/* =========================================
+TOAST
+========================================= */
+
 function showToast(message) {
 const toast = $("#toast");
 
@@ -108,6 +112,10 @@ toast.classList.remove("show");
 }, 3000);
 }
 
+/* =========================================
+HTML ESCAPING
+========================================= */
+
 function escapeHtml(value) {
 return String(value ?? "").replace(
 /[&<>'"]/g,
@@ -123,6 +131,10 @@ return {
 );
 }
 
+/* =========================================
+SAVE CART
+========================================= */
+
 function saveCart() {
 localStorage.setItem(
 "moss-mud-cart",
@@ -131,6 +143,10 @@ JSON.stringify(cart)
 
 renderCart();
 }
+
+/* =========================================
+FILTERS
+========================================= */
 
 function renderFilters() {
 const filters = $("#filters");
@@ -150,6 +166,10 @@ return `         <button
       `;
 }).join("");
 }
+
+/* =========================================
+PRODUCTS
+========================================= */
 
 function renderProducts() {
 const grid = $("#product-grid");
@@ -300,8 +320,16 @@ filteredProducts
 
 }
 
+/* =========================================
+CART
+========================================= */
+
 function renderCart() {
 const cartItems = $("#cart-items");
+
+const cartSubtotal = $("#cart-subtotal");
+
+const cartShipping = $("#cart-shipping");
 
 const cartTotal = $("#cart-total");
 
@@ -324,7 +352,7 @@ item.quantity || 0
 0
 );
 
-const totalPrice =
+const subtotal =
 items.reduce(
 (total, item) => {
 return (
@@ -340,9 +368,15 @@ item.quantity || 0
 0
 );
 
-/* =========================================
-R89 SHIPPING
-========================================= */
+/*
+R89 shipping applies to every order.
+
+```
+Empty cart = R0 shipping.
+Cart with products = R89 shipping.
+```
+
+*/
 
 const shipping =
 items.length > 0
@@ -350,17 +384,47 @@ items.length > 0
 : 0;
 
 const finalTotal =
-totalPrice + shipping;
+subtotal + shipping;
+
+/* =======================================
+UPDATE BAG COUNT
+======================================= */
 
 if (bagCount) {
 bagCount.textContent =
 totalQuantity;
 }
 
+/* =======================================
+UPDATE SUBTOTAL
+======================================= */
+
+if (cartSubtotal) {
+cartSubtotal.textContent =
+money(subtotal);
+}
+
+/* =======================================
+UPDATE SHIPPING
+======================================= */
+
+if (cartShipping) {
+cartShipping.textContent =
+money(shipping);
+}
+
+/* =======================================
+UPDATE FINAL TOTAL
+======================================= */
+
 if (cartTotal) {
 cartTotal.textContent =
 money(finalTotal);
 }
+
+/* =======================================
+EMPTY CART
+======================================= */
 
 if (!items.length) {
 cartItems.innerHTML = ` <div class="empty-cart">
@@ -381,6 +445,10 @@ return;
 ```
 
 }
+
+/* =======================================
+CART ITEMS
+======================================= */
 
 cartItems.innerHTML =
 items
@@ -469,6 +537,10 @@ items
 
 }
 
+/* =========================================
+ADD TO CART
+========================================= */
+
 function addToCart(productId) {
 const product =
 products.find((item) => {
@@ -509,6 +581,10 @@ showToast(
 );
 }
 
+/* =========================================
+UPDATE QUANTITY
+========================================= */
+
 function updateQuantity(
 productId,
 change
@@ -530,6 +606,10 @@ delete cart[productId];
 saveCart();
 }
 
+/* =========================================
+OPEN CART
+========================================= */
+
 function openCart() {
 const drawer =
 $("#cart-drawer");
@@ -543,6 +623,10 @@ drawer.setAttribute(
 "false"
 );
 }
+
+/* =========================================
+CLOSE CART
+========================================= */
 
 function closeCart() {
 const drawer =
@@ -560,21 +644,26 @@ drawer.setAttribute(
 );
 }
 
+/* =========================================
+LOAD PRODUCTS
+========================================= */
+
 async function loadProducts() {
 const config =
 window.PETSHOP_CONFIG || {};
 
 try {
-if (
-!config.supabaseUrl ||
-!config.supabasePublishableKey
-) {
-throw new Error(
-"Supabase configuration is missing."
-);
-}
 
 ```
+if (
+  !config.supabaseUrl ||
+  !config.supabasePublishableKey
+) {
+  throw new Error(
+    "Supabase configuration is missing."
+  );
+}
+
 if (!window.supabase) {
   throw new Error(
     "Supabase JavaScript library was not loaded."
@@ -613,12 +702,13 @@ console.log(
 ```
 
 } catch (error) {
-console.error(
-"Supabase product loading failed:",
-error
-);
 
 ```
+console.error(
+  "Supabase product loading failed:",
+  error
+);
+
 products =
   SAMPLE_PRODUCTS;
 
@@ -634,6 +724,10 @@ renderProducts();
 renderCart();
 }
 
+/* =========================================
+CLICK HANDLERS
+========================================= */
+
 document.addEventListener(
 "click",
 (event) => {
@@ -645,6 +739,7 @@ const categoryButton =
   );
 
 if (categoryButton) {
+
   selectedCategory =
     categoryButton.dataset.category;
 
@@ -654,12 +749,14 @@ if (categoryButton) {
   return;
 }
 
+
 const addButton =
   event.target.closest(
     "[data-add]"
   );
 
 if (addButton) {
+
   addToCart(
     addButton.dataset.add
   );
@@ -667,12 +764,14 @@ if (addButton) {
   return;
 }
 
+
 const plusButton =
   event.target.closest(
     "[data-plus]"
   );
 
 if (plusButton) {
+
   updateQuantity(
     plusButton.dataset.plus,
     1
@@ -681,12 +780,14 @@ if (plusButton) {
   return;
 }
 
+
 const minusButton =
   event.target.closest(
     "[data-minus]"
   );
 
 if (minusButton) {
+
   updateQuantity(
     minusButton.dataset.minus,
     -1
@@ -695,11 +796,13 @@ if (minusButton) {
   return;
 }
 
+
 if (
   event.target.closest(
     "[data-close-cart]"
   )
 ) {
+
   closeCart();
 }
 ```
@@ -707,30 +810,45 @@ if (
 }
 );
 
+/* =========================================
+SEARCH
+========================================= */
+
 const searchInput =
 $("#search");
 
 if (searchInput) {
+
 searchInput.addEventListener(
 "input",
 renderProducts
 );
 }
 
+/* =========================================
+BAG BUTTON
+========================================= */
+
 const bagButton =
 $("#bag-button");
 
 if (bagButton) {
+
 bagButton.addEventListener(
 "click",
 openCart
 );
 }
 
+/* =========================================
+NEWSLETTER
+========================================= */
+
 const newsletter =
 $("#newsletter");
 
 if (newsletter) {
+
 newsletter.addEventListener(
 "submit",
 (event) => {
@@ -768,6 +886,7 @@ PAYFAST RETURN HANDLING
 ========================================= */
 
 function handlePaymentReturn() {
+
 const params = new URLSearchParams(
 window.location.search
 );
@@ -782,21 +901,16 @@ SUCCESSFUL PAYMENT
 if (payment === "success") {
 
 ```
-// Clear the shopping cart
 cart = {};
 
 localStorage.removeItem(
   "moss-mud-cart"
 );
 
-// Update the cart display
 renderCart();
 
-// Show congratulations message
 showPaymentSuccess();
 
-// Remove ?payment=success
-// from the browser URL
 window.history.replaceState(
   {},
   document.title,
@@ -813,8 +927,6 @@ CANCELLED PAYMENT
 if (payment === "cancelled") {
 
 ```
-// Remove ?payment=cancelled
-// from the browser URL
 window.history.replaceState(
   {},
   document.title,
@@ -960,12 +1072,16 @@ document.getElementById(
 );
 
 if (continueButton) {
+
+```
 continueButton.addEventListener(
-"click",
-() => {
-message.remove();
-}
+  "click",
+  () => {
+    message.remove();
+  }
 );
+```
+
 }
 }
 

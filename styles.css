@@ -796,3 +796,11 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+.brand img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

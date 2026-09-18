@@ -190,7 +190,7 @@ searchInput
 const filteredProducts =
 products.filter((product) => {
 
-```
+
   const matchesCategory =
     selectedCategory === "All pieces" ||
     product.category === selectedCategory;
@@ -211,7 +211,7 @@ products.filter((product) => {
     matchesSearch
   );
 });
-```
+
 
 if (pieceCount) {
 pieceCount.textContent =
@@ -227,9 +227,9 @@ grid.innerHTML = `       <div class="empty">
         No pieces found.       </div>
     `;
 
-```
+
 return;
-```
+
 
 }
 
@@ -237,7 +237,7 @@ grid.innerHTML =
 filteredProducts
 .map((product) => {
 
-```
+
     const badge =
       product.badge
         ? `
@@ -316,7 +316,7 @@ filteredProducts
     `;
   })
   .join("");
-```
+
 
 }
 
@@ -371,10 +371,10 @@ item.quantity || 0
 /*
 R89 shipping applies to every order.
 
-```
+
 Empty cart = R0 shipping.
 Cart with products = R89 shipping.
-```
+
 
 */
 
@@ -429,7 +429,7 @@ EMPTY CART
 if (!items.length) {
 cartItems.innerHTML = ` <div class="empty-cart">
 
-```
+
     <h3>
       Your bag is waiting.
     </h3>
@@ -442,7 +442,7 @@ cartItems.innerHTML = ` <div class="empty-cart">
 `;
 
 return;
-```
+
 
 }
 
@@ -454,7 +454,7 @@ cartItems.innerHTML =
 items
 .map((item) => {
 
-```
+
     const quantity =
       Number(
         item.quantity || 0
@@ -533,7 +533,7 @@ items
     `;
   })
   .join("");
-```
+
 
 }
 
@@ -555,22 +555,22 @@ showToast(
 "Product could not be found."
 );
 
-```
+
 return;
-```
+
 
 }
 
 cart[productId] = {
 ...product,
 
-```
+
 quantity:
   Number(
     cart[productId]?.quantity ||
     0
   ) + 1
-```
+
 
 };
 
@@ -654,7 +654,7 @@ window.PETSHOP_CONFIG || {};
 
 try {
 
-```
+
 if (
   !config.supabaseUrl ||
   !config.supabasePublishableKey
@@ -699,11 +699,11 @@ console.log(
   "Products loaded:",
   products.length
 );
-```
+
 
 } catch (error) {
 
-```
+
 console.error(
   "Supabase product loading failed:",
   error
@@ -715,7 +715,7 @@ products =
 showToast(
   "Using sample products because the catalogue could not be loaded."
 );
-```
+
 
 }
 
@@ -732,7 +732,7 @@ document.addEventListener(
 "click",
 (event) => {
 
-```
+
 const categoryButton =
   event.target.closest(
     "[data-category]"
@@ -805,7 +805,7 @@ if (
 
   closeCart();
 }
-```
+
 
 }
 );
@@ -853,7 +853,7 @@ newsletter.addEventListener(
 "submit",
 (event) => {
 
-```
+
   event.preventDefault();
 
   showToast(
@@ -862,7 +862,7 @@ newsletter.addEventListener(
 
   event.target.reset();
 }
-```
+
 
 );
 }
@@ -900,7 +900,7 @@ SUCCESSFUL PAYMENT
 
 if (payment === "success") {
 
-```
+
 cart = {};
 
 localStorage.removeItem(
@@ -916,7 +916,7 @@ window.history.replaceState(
   document.title,
   window.location.pathname
 );
-```
+
 
 }
 
@@ -926,7 +926,7 @@ CANCELLED PAYMENT
 
 if (payment === "cancelled") {
 
-```
+
 window.history.replaceState(
   {},
   document.title,
@@ -936,7 +936,7 @@ window.history.replaceState(
 showToast(
   "Your payment was cancelled."
 );
-```
+
 
 }
 }
@@ -975,7 +975,7 @@ message.innerHTML = ` <div
    "
  >
 
-```
+
   <div
     style="
       background:#fff;
@@ -1058,7 +1058,7 @@ message.innerHTML = ` <div
   </div>
 
 </div>
-```
+
 
 `;
 
@@ -1073,14 +1073,14 @@ document.getElementById(
 
 if (continueButton) {
 
-```
+
 continueButton.addEventListener(
   "click",
   () => {
     message.remove();
   }
 );
-```
+
 
 }
 }

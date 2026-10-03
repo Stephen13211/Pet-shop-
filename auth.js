@@ -1548,6 +1548,14 @@ function setupGuestCheckout() {
                     items: checkoutItems
                   }
                 );
+
+                console.log(
+                  "GA4 begin_checkout sent:",
+                  {
+                    value: checkoutValue,
+                    items: checkoutItems
+                  }
+                );
               }
 
 

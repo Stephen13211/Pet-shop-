@@ -1,4 +1,3 @@
-
 const pawsConfig =
   window.PETSHOP_CONFIG || {};
 
@@ -1061,7 +1060,6 @@ function setupGuestCheckout() {
       event.preventDefault();
       event.stopPropagation();
 
-
       const existing =
         document.querySelector(
           "#guest-checkout"
@@ -1071,7 +1069,6 @@ function setupGuestCheckout() {
         existing.remove();
       }
 
-
       const checkoutBox =
         document.createElement(
           "div"
@@ -1079,7 +1076,6 @@ function setupGuestCheckout() {
 
       checkoutBox.id =
         "guest-checkout";
-
 
       checkoutBox.innerHTML = `
 
@@ -1239,11 +1235,9 @@ function setupGuestCheckout() {
 
       `;
 
-
       document.body.appendChild(
         checkoutBox
       );
-
 
       /* ---------------------------------------------------
          CLOSE CHECKOUT
@@ -1487,8 +1481,79 @@ function setupGuestCheckout() {
 
 
               /* -------------------------------------------
+                 GOOGLE ANALYTICS — BEGIN CHECKOUT
+              ------------------------------------------- */
+
+              if (
+                typeof window.gtag === "function"
+              ) {
+
+                const checkoutItems =
+                  cartItems.map(
+                    (item) => {
+
+                      return {
+                        item_id:
+                          String(item.id),
+
+                        item_name:
+                          item.name,
+
+                        item_category:
+                          item.category ||
+                          "Other",
+
+                        price:
+                          Number(
+                            item.price_zar
+                          ) || 0,
+
+                        quantity:
+                          Number(
+                            item.quantity
+                          ) || 1
+                      };
+
+                    }
+                  );
+
+                const checkoutValue =
+                  cartItems.reduce(
+                    (total, item) => {
+
+                      return (
+                        total +
+                        (
+                          Number(
+                            item.price_zar
+                          ) || 0
+                        ) *
+                        (
+                          Number(
+                            item.quantity
+                          ) || 1
+                        )
+                      );
+
+                    },
+                    0
+                  ) + 89;
+
+                window.gtag(
+                  "event",
+                  "begin_checkout",
+                  {
+                    currency: "ZAR",
+                    value: checkoutValue,
+                    items: checkoutItems
+                  }
+                );
+              }
+
+
+              /* -------------------------------------------
                  SEND CUSTOMER TO PAYFAST
-                 ------------------------------------------- */
+              ------------------------------------------- */
 
               const payfastForm =
                 document.createElement(
@@ -1576,16 +1641,13 @@ function setupGuestCheckoutStyles() {
     return;
   }
 
-
   const style =
     document.createElement(
       "style"
     );
 
-
   style.id =
     "guest-checkout-styles";
-
 
   style.textContent = `
 
@@ -1710,7 +1772,6 @@ function setupGuestCheckoutStyles() {
     }
 
   `;
-
 
   document.head.appendChild(
     style

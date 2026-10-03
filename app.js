@@ -1,593 +1,894 @@
-// ============================================================
-// PAWS INCORPORATED - APP.JS
-// ============================================================
-
-// ------------------------------------------------------------
-// CONFIG
-// ------------------------------------------------------------
-
-const config = window.PETSHOP_CONFIG || {};
-
-const SHIPPING_FEE = 89;
-
-const CART_STORAGE_KEY = "moss-mud-cart";
-
-
-// ------------------------------------------------------------
-// SAMPLE PRODUCTS
-// ------------------------------------------------------------
-// These are only used if Supabase products cannot be loaded.
-// Your real catalogue comes from Supabase.
-// ------------------------------------------------------------
-
 const SAMPLE_PRODUCTS = [
   {
-    id: "sample-chicken-breast",
-    name: "Air-Fried Dried Chicken Breast",
-    price_zar: 99,
-    category: "Treats",
-    active: true
+    id: "moss-bed",
+    name: "Moss cloud bed",
+    category: "Rest",
+    price_zar: 699,
+    badge: "Bestseller",
+    image_url:
+      "https://images.unsplash.com/photo-1522444195799-478538b28823?auto=format&fit=crop&w=900&q=85",
+    description:
+      "A washable, cloud-soft landing spot for serious snoozers."
   },
   {
-    id: "sample-chicken-hearts",
-    name: "Dried Chicken Hearts",
-    price_zar: 99,
-    category: "Treats",
-    active: true
+    id: "terra-bowl",
+    name: "Terra slow-feeder bowl",
+    category: "Mealtimes",
+    price_zar: 289,
+    badge: "New",
+    image_url:
+      "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=900&q=85",
+    description:
+      "Calm, considered mealtimes in a hand-finished stoneware bowl."
   },
   {
-    id: "sample-chicken-livers",
-    name: "Dried Chicken Livers",
-    price_zar: 99,
-    category: "Treats",
-    active: true
+    id: "sunny-toy",
+    name: "Sunny knot toy",
+    category: "Play",
+    price_zar: 149,
+    image_url:
+      "https://images.unsplash.com/photo-1558929996-da64ba858215?auto=format&fit=crop&w=900&q=85",
+    description:
+      "A joyful, sturdy little companion for tug, toss and zoomies."
   },
   {
-    id: "sample-safety-leash",
-    name: "Car Safety-Belt Leash",
-    price_zar: 179,
+    id: "linen-lead",
+    name: "Linen everyday lead",
     category: "Walks",
-    active: true
+    price_zar: 249,
+    image_url:
+      "https://images.unsplash.com/photo-1558788353-f76d92427f16?auto=format&fit=crop&w=900&q=85",
+    description:
+      "Soft-touch webbing and a brass clip for unhurried adventures."
   },
   {
-    id: "sample-joint-brace",
-    name: "Joint Support Brace Pair",
-    price_zar: 229,
+    id: "cozy-cat",
+    name: "Cedar cat hideaway",
+    category: "Rest",
+    price_zar: 549,
+    image_url:
+      "https://images.unsplash.com/photo-1494256997604-768d1f608cac?auto=format&fit=crop&w=900&q=85",
+    description:
+      "A private nook for high perches, slow blinks and big naps."
+  },
+  {
+    id: "groom-kit",
+    name: "Sunday groom kit",
     category: "Care",
-    active: true
-  },
-  {
-    id: "sample-headrest",
-    name: "Car Window Headrest",
-    price_zar: 199,
-    category: "Travel",
-    active: true
+    price_zar: 329,
+    image_url:
+      "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=900&q=85",
+    description:
+      "Three gentle essentials for a softer coat and a calmer ritual."
   }
 ];
 
+const CATEGORIES = [
+  "All pieces",
+  "Rest",
+  "Play",
+  "Walks",
+  "Mealtimes",
+  "Care"
+];
 
-// ------------------------------------------------------------
-// SUPABASE
-// ------------------------------------------------------------
+/* =========================================
+   GOOGLE ANALYTICS
+========================================= */
 
-let supabaseClient = null;
-
-if (
-  window.supabase &&
-  config.supabaseUrl &&
-  config.supabasePublishableKey
-) {
-  supabaseClient = window.supabase.createClient(
-    config.supabaseUrl,
-    config.supabasePublishableKey
-  );
-}
-
-
-// ------------------------------------------------------------
-// STATE
-// ------------------------------------------------------------
-
-let products = [];
-
-let cart = {};
-
-
-// ------------------------------------------------------------
-// CART LOAD
-// ------------------------------------------------------------
-
-function loadCart() {
-  try {
-    const savedCart =
-      localStorage.getItem(CART_STORAGE_KEY);
-
-    if (!savedCart) {
-      cart = {};
-      return;
-    }
-
-    const parsed = JSON.parse(savedCart);
-
-    if (
-      parsed &&
-      typeof parsed === "object"
-    ) {
-      cart = parsed;
-    } else {
-      cart = {};
-    }
-
-  } catch (error) {
-    console.error(
-      "Unable to load cart:",
-      error
-    );
-
-    cart = {};
-  }
-}
-
-
-// ------------------------------------------------------------
-// CART SAVE
-// ------------------------------------------------------------
-
-function saveCart() {
-  try {
-    localStorage.setItem(
-      CART_STORAGE_KEY,
-      JSON.stringify(cart)
-    );
-  } catch (error) {
-    console.error(
-      "Unable to save cart:",
-      error
-    );
-  }
-}
-
-
-// ------------------------------------------------------------
-// GA4
-// ------------------------------------------------------------
-
-function trackGA4(
-  eventName,
-  parameters = {}
-) {
-  if (
-    typeof window.gtag !== "function"
-  ) {
-    console.warn(
-      "GA4 gtag is not available."
-    );
-
+function trackGA4(eventName, parameters = {}) {
+  if (typeof window.gtag !== "function") {
+    console.warn("GA4 gtag is not available.");
     return;
   }
 
-  window.gtag(
-    "event",
-    eventName,
-    parameters
-  );
+  window.gtag("event", eventName, parameters);
 }
 
-
-function getGA4Item(
-  product,
-  quantity = 1
-) {
+function getGA4Item(product, quantity = 1) {
   return {
     item_id: String(product.id),
     item_name: product.name,
-    item_category:
-      product.category || "Other",
-    price:
-      Number(product.price_zar) || 0,
-    quantity:
-      Number(quantity) || 1
+    item_category: product.category || "Other",
+    price: Number(product.price_zar) || 0,
+    quantity: Number(quantity) || 1
   };
 }
 
+let products = [];
+let selectedCategory = "All pieces";
 
-// ------------------------------------------------------------
-// LOAD PRODUCTS
-// ------------------------------------------------------------
+let cart = JSON.parse(
+  localStorage.getItem("moss-mud-cart") || "{}"
+);
 
-async function loadProducts() {
-  try {
+const $ = (selector) =>
+  document.querySelector(selector);
 
-    if (!supabaseClient) {
-      console.warn(
-        "Supabase is not configured. Using sample products."
-      );
+const money = (value) => {
+  return `R${Number(value).toLocaleString("en-ZA")}`;
+};
 
-      products = SAMPLE_PRODUCTS;
+/* =========================================
+   SHIPPING
+========================================= */
 
-      return;
-    }
+const SHIPPING_FEE = 89;
 
-    const {
-      data,
-      error
-    } = await supabaseClient
-      .from("products")
-      .select("*")
-      .eq("active", true)
-      .order("name");
+/* =========================================
+   TOAST
+========================================= */
 
-    if (error) {
-      throw error;
-    }
+function showToast(message) {
+  const toast = $("#toast");
 
-    if (
-      Array.isArray(data) &&
-      data.length > 0
-    ) {
-      products = data;
-    } else {
-      console.warn(
-        "No Supabase products found. Using sample products."
-      );
+  if (!toast) return;
 
-      products = SAMPLE_PRODUCTS;
-    }
+  toast.textContent = message;
 
-  } catch (error) {
+  toast.classList.add("show");
 
-    console.error(
-      "Unable to load products:",
-      error
-    );
+  clearTimeout(window.toastTimer);
 
-    products = SAMPLE_PRODUCTS;
-  }
+  window.toastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
 }
 
+/* =========================================
+   HTML ESCAPING
+========================================= */
 
-// ------------------------------------------------------------
-// FIND PRODUCT
-// ------------------------------------------------------------
-
-function getProductById(productId) {
-  return products.find(
-    (product) =>
-      String(product.id) ===
-      String(productId)
+function escapeHtml(value) {
+  return String(value ?? "").replace(
+    /[&<>'"]/g,
+    (character) => {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      }[character];
+    }
   );
 }
 
+/* =========================================
+   SAVE CART
+========================================= */
 
-// ------------------------------------------------------------
-// ADD TO CART
-// ------------------------------------------------------------
+function saveCart() {
+  localStorage.setItem(
+    "moss-mud-cart",
+    JSON.stringify(cart)
+  );
 
-function addToCart(productId) {
+  renderCart();
+}
 
-  const product =
-    getProductById(productId);
+/* =========================================
+   FILTERS
+========================================= */
 
-  if (!product) {
-    console.error(
-      "Product not found:",
-      productId
-    );
+function renderFilters() {
+  const filters = $("#filters");
+
+  if (!filters) return;
+
+  filters.innerHTML =
+    CATEGORIES.map((category) => {
+      return `
+        <button
+          class="filter ${
+            selectedCategory === category
+              ? "active"
+              : ""
+          }"
+          data-category="${escapeHtml(category)}"
+        >
+          ${escapeHtml(category)}
+        </button>
+      `;
+    }).join("");
+}
+
+/* =========================================
+   PRODUCTS
+========================================= */
+
+function renderProducts() {
+  const grid = $("#product-grid");
+
+  const pieceCount = $("#piece-count");
+
+  const searchInput = $("#search");
+
+  if (!grid) return;
+
+  const searchTerm =
+    searchInput
+      ? searchInput.value
+          .trim()
+          .toLowerCase()
+      : "";
+
+  const filteredProducts =
+    products.filter((product) => {
+
+      const matchesCategory =
+        selectedCategory === "All pieces" ||
+        product.category === selectedCategory;
+
+      const searchableText = `
+        ${product.name || ""}
+        ${product.category || ""}
+        ${product.description || ""}
+        ${product.badge || ""}
+      `.toLowerCase();
+
+      const matchesSearch =
+        !searchTerm ||
+        searchableText.includes(searchTerm);
+
+      return (
+        matchesCategory &&
+        matchesSearch
+      );
+    });
+
+  if (pieceCount) {
+    pieceCount.textContent =
+      `${filteredProducts.length} ${
+        filteredProducts.length === 1
+          ? "piece"
+          : "pieces"
+      }`;
+  }
+
+  if (!filteredProducts.length) {
+    grid.innerHTML = `
+      <div class="empty">
+        No pieces found.
+      </div>
+    `;
 
     return;
   }
 
-  const existingQuantity =
-    Number(cart[productId] || 0);
+  grid.innerHTML =
+    filteredProducts
+      .map((product) => {
 
-  cart[productId] =
-    existingQuantity + 1;
+        const badge =
+          product.badge
+            ? `
+              <span>
+                ${escapeHtml(
+                  product.badge
+                )}
+              </span>
+            `
+            : "";
 
-  saveCart();
+        return `
+          <article class="product-card">
 
-  renderCart();
+            <div class="product-image">
 
-  // ----------------------------------------------------------
-  // GA4 ADD TO CART
-  // ----------------------------------------------------------
+              <img
+                src="${escapeHtml(
+                  product.image_url
+                )}"
+                alt="${escapeHtml(
+                  product.name
+                )}"
+                loading="lazy"
+              >
 
-  trackGA4(
-    "add_to_cart",
-    {
-      currency: "ZAR",
+              ${badge}
 
-      value:
-        Number(product.price_zar) || 0,
+              <button
+                type="button"
+                data-add="${escapeHtml(
+                  product.id
+                )}"
+                aria-label="Add ${escapeHtml(
+                  product.name
+                )} to bag"
+              >
+                +
+              </button>
 
-      items: [
-        getGA4Item(
-          product,
-          1
-        )
-      ]
-    }
-  );
+            </div>
+
+            <div class="product-info">
+
+              <div>
+
+                <small>
+                  ${escapeHtml(
+                    product.category || ""
+                  )}
+                </small>
+
+                <h3>
+                  ${escapeHtml(
+                    product.name
+                  )}
+                </h3>
+
+              </div>
+
+              <b>
+                ${money(
+                  product.price_zar
+                )}
+              </b>
+
+              <p>
+                ${escapeHtml(
+                  product.description || ""
+                )}
+              </p>
+
+            </div>
+
+          </article>
+        `;
+      })
+      .join("");
 }
 
+/* =========================================
+   CART
+========================================= */
 
-// ------------------------------------------------------------
-// REMOVE FROM CART
-// ------------------------------------------------------------
+function renderCart() {
+  const cartItems = $("#cart-items");
 
-function removeFromCart(productId) {
+  const cartSubtotal = $("#cart-subtotal");
 
-  if (!cart[productId]) {
-    return;
-  }
+  const cartShipping = $("#cart-shipping");
 
-  const quantity =
-    Number(cart[productId]);
+  const cartTotal = $("#cart-total");
 
-  if (quantity <= 1) {
-    delete cart[productId];
-  } else {
-    cart[productId] =
-      quantity - 1;
-  }
+  const bagCount = $("#bag-count");
 
-  saveCart();
+  if (!cartItems) return;
 
-  renderCart();
-}
+  const items = Object.values(cart);
 
-
-// ------------------------------------------------------------
-// SET CART QUANTITY
-// ------------------------------------------------------------
-
-function setCartQuantity(
-  productId,
-  quantity
-) {
-
-  const numericQuantity =
-    Math.floor(
-      Number(quantity)
-    );
-
-  if (
-    !Number.isFinite(
-      numericQuantity
-    ) ||
-    numericQuantity <= 0
-  ) {
-    delete cart[productId];
-  } else {
-    cart[productId] =
-      numericQuantity;
-  }
-
-  saveCart();
-
-  renderCart();
-}
-
-
-// ------------------------------------------------------------
-// CLEAR CART
-// ------------------------------------------------------------
-
-function clearCart() {
-
-  cart = {};
-
-  localStorage.removeItem(
-    CART_STORAGE_KEY
-  );
-
-  renderCart();
-}
-
-
-// ------------------------------------------------------------
-// CART ITEMS
-// ------------------------------------------------------------
-
-function getCartItems() {
-
-  return Object.entries(cart)
-    .map(
-      ([
-        productId,
-        quantity
-      ]) => {
-
-        const product =
-          getProductById(
-            productId
-          );
-
-        if (!product) {
-          return null;
-        }
-
-        return {
-          ...product,
-
-          quantity:
-            Number(quantity) || 1
-        };
-      }
-    )
-    .filter(Boolean);
-}
-
-
-// ------------------------------------------------------------
-// CART TOTAL
-// ------------------------------------------------------------
-
-function getCartSubtotal() {
-
-  return getCartItems()
-    .reduce(
-      (
-        total,
-        item
-      ) => {
-
+  const totalQuantity =
+    items.reduce(
+      (total, item) => {
         return (
           total +
-          (
-            Number(
-              item.price_zar
-            ) || 0
-          ) *
-          (
-            Number(
-              item.quantity
-            ) || 1
+          Number(
+            item.quantity || 0
           )
         );
       },
       0
     );
-}
-
-
-function getCartTotal() {
 
   const subtotal =
-    getCartSubtotal();
-
-  if (subtotal <= 0) {
-    return 0;
-  }
-
-  return (
-    subtotal +
-    SHIPPING_FEE
-  );
-}
-
-
-// ------------------------------------------------------------
-// RENDER CART
-// ------------------------------------------------------------
-
-function renderCart() {
-
-  /*
-    Keep your existing cart rendering
-    code here if your current app.js
-    contains additional UI-specific
-    rendering logic.
-
-    This function intentionally does
-    not alter your checkout system.
-  */
-
-  if (
-    typeof window.updateCartUI ===
-    "function"
-  ) {
-    window.updateCartUI();
-  }
-
-  document.dispatchEvent(
-    new CustomEvent(
-      "cartUpdated"
-    )
-  );
-}
-
-
-// ------------------------------------------------------------
-// PAYMENT SUCCESS UI
-// ------------------------------------------------------------
-
-function showPaymentSuccess() {
-
-  /*
-    If your existing app.js contains
-    the full success modal implementation,
-    keep that implementation here.
-
-    This fallback prevents an error if
-    the function does not exist elsewhere.
-  */
-
-  const modal =
-    document.getElementById(
-      "payment-success-modal"
+    items.reduce(
+      (total, item) => {
+        return (
+          total +
+          Number(
+            item.price_zar || 0
+          ) *
+          Number(
+            item.quantity || 0
+          )
+        );
+      },
+      0
     );
 
-  if (modal) {
-    modal.classList.add(
-      "active"
+  const shipping =
+    items.length > 0
+      ? SHIPPING_FEE
+      : 0;
+
+  const finalTotal =
+    subtotal + shipping;
+
+  if (bagCount) {
+    bagCount.textContent =
+      totalQuantity;
+  }
+
+  if (cartSubtotal) {
+    cartSubtotal.textContent =
+      money(subtotal);
+  }
+
+  if (cartShipping) {
+    cartShipping.textContent =
+      money(shipping);
+  }
+
+  if (cartTotal) {
+    cartTotal.textContent =
+      money(finalTotal);
+  }
+
+  if (!items.length) {
+    cartItems.innerHTML = `
+      <div class="empty-cart">
+
+        <h3>
+          Your bag is waiting.
+        </h3>
+
+        <p>
+          Add something lovely for your pet to get started.
+        </p>
+
+      </div>
+    `;
+
+    return;
+  }
+
+  cartItems.innerHTML =
+    items
+      .map((item) => {
+
+        const quantity =
+          Number(
+            item.quantity || 0
+          );
+
+        return `
+          <div class="cart-row">
+
+            <img
+              src="${escapeHtml(
+                item.image_url
+              )}"
+              alt="${escapeHtml(
+                item.name
+              )}"
+            >
+
+            <div>
+
+              <div class="cart-title">
+
+                <span>
+                  ${escapeHtml(
+                    item.name
+                  )}
+                </span>
+
+                <b>
+                  ${money(
+                    Number(
+                      item.price_zar || 0
+                    ) *
+                    quantity
+                  )}
+                </b>
+
+              </div>
+
+              <small>
+                ${escapeHtml(
+                  item.category || ""
+                )}
+              </small>
+
+              <div class="quantity">
+
+                <button
+                  type="button"
+                  data-minus="${escapeHtml(
+                    item.id
+                  )}"
+                  aria-label="Decrease quantity"
+                >
+                  −
+                </button>
+
+                <span>
+                  ${quantity}
+                </span>
+
+                <button
+                  type="button"
+                  data-plus="${escapeHtml(
+                    item.id
+                  )}"
+                  aria-label="Increase quantity"
+                >
+                  +
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+        `;
+      })
+      .join("");
+}
+
+/* =========================================
+   ADD TO CART
+========================================= */
+
+function addToCart(productId) {
+  const product =
+    products.find((item) => {
+      return (
+        String(item.id) ===
+        String(productId)
+      );
+    });
+
+  if (!product) {
+    showToast(
+      "Product could not be found."
     );
 
     return;
   }
 
+  const newQuantity =
+    Number(
+      cart[productId]?.quantity || 0
+    ) + 1;
+
+  cart[productId] = {
+    ...product,
+    quantity: newQuantity
+  };
+
+  saveCart();
+
+  /* =======================================
+     GOOGLE ANALYTICS — ADD TO CART
+  ======================================= */
+
+  trackGA4("add_to_cart", {
+    currency: "ZAR",
+    value:
+      Number(product.price_zar) || 0,
+    items: [
+      getGA4Item(product, 1)
+    ]
+  });
+
   showToast(
-    "Payment confirmed! Your order has been received."
+    `${product.name} added to your bag`
   );
 }
 
+/* =========================================
+   UPDATE QUANTITY
+========================================= */
 
-// ------------------------------------------------------------
-// TOAST
-// ------------------------------------------------------------
+function updateQuantity(
+  productId,
+  change
+) {
+  if (!cart[productId]) return;
 
-function showToast(message) {
+  cart[productId].quantity =
+    Number(
+      cart[productId].quantity || 0
+    ) + change;
 
-  const existing =
-    document.querySelector(
-      ".paws-toast"
-    );
-
-  if (existing) {
-    existing.remove();
+  if (
+    cart[productId].quantity < 1
+  ) {
+    delete cart[productId];
   }
 
-  const toast =
-    document.createElement(
-      "div"
-    );
+  saveCart();
+}
 
-  toast.className =
-    "paws-toast";
+/* =========================================
+   OPEN CART
+========================================= */
 
-  toast.textContent =
-    message;
+function openCart() {
+  const drawer =
+    $("#cart-drawer");
 
-  document.body.appendChild(
-    toast
-  );
+  if (!drawer) return;
 
-  setTimeout(
-    () => {
-      toast.remove();
-    },
-    4000
+  drawer.classList.add("open");
+
+  drawer.setAttribute(
+    "aria-hidden",
+    "false"
   );
 }
 
+/* =========================================
+   CLOSE CART
+========================================= */
 
-// ============================================================
-// VERIFIED PURCHASE
-// ============================================================
+function closeCart() {
+  const drawer =
+    $("#cart-drawer");
+
+  if (!drawer) return;
+
+  drawer.classList.remove(
+    "open"
+  );
+
+  drawer.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+}
+
+/* =========================================
+   LOAD PRODUCTS
+========================================= */
+
+async function loadProducts() {
+  const config =
+    window.PETSHOP_CONFIG || {};
+
+  try {
+
+    if (
+      !config.supabaseUrl ||
+      !config.supabasePublishableKey
+    ) {
+      throw new Error(
+        "Supabase configuration is missing."
+      );
+    }
+
+    if (!window.supabase) {
+      throw new Error(
+        "Supabase JavaScript library was not loaded."
+      );
+    }
+
+    const supabaseClient =
+      window.supabase.createClient(
+        config.supabaseUrl,
+        config.supabasePublishableKey
+      );
+
+    const result =
+      await supabaseClient
+        .from("products")
+        .select("*")
+        .eq(
+          "active",
+          true
+        )
+        .order("name");
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    products =
+      result.data?.length
+        ? result.data
+        : SAMPLE_PRODUCTS;
+
+    console.log(
+      "Products loaded:",
+      products.length
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Supabase product loading failed:",
+      error
+    );
+
+    products =
+      SAMPLE_PRODUCTS;
+
+    showToast(
+      "Using sample products because the catalogue could not be loaded."
+    );
+  }
+
+  renderFilters();
+  renderProducts();
+  renderCart();
+}
+
+/* =========================================
+   CLICK HANDLERS
+========================================= */
+
+document.addEventListener(
+  "click",
+  (event) => {
+
+    const categoryButton =
+      event.target.closest(
+        "[data-category]"
+      );
+
+    if (categoryButton) {
+
+      selectedCategory =
+        categoryButton.dataset.category;
+
+      renderFilters();
+      renderProducts();
+
+      return;
+    }
+
+    const addButton =
+      event.target.closest(
+        "[data-add]"
+      );
+
+    if (addButton) {
+
+      addToCart(
+        addButton.dataset.add
+      );
+
+      return;
+    }
+
+    const plusButton =
+      event.target.closest(
+        "[data-plus]"
+      );
+
+    if (plusButton) {
+
+      updateQuantity(
+        plusButton.dataset.plus,
+        1
+      );
+
+      return;
+    }
+
+    const minusButton =
+      event.target.closest(
+        "[data-minus]"
+      );
+
+    if (minusButton) {
+
+      updateQuantity(
+        minusButton.dataset.minus,
+        -1
+      );
+
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "[data-close-cart]"
+      )
+    ) {
+
+      closeCart();
+    }
+  }
+);
+
+/* =========================================
+   SEARCH
+========================================= */
+
+const searchInput =
+  $("#search");
+
+if (searchInput) {
+
+  searchInput.addEventListener(
+    "input",
+    renderProducts
+  );
+}
+
+/* =========================================
+   BAG BUTTON
+========================================= */
+
+const bagButton =
+  $("#bag-button");
+
+if (bagButton) {
+
+  bagButton.addEventListener(
+    "click",
+    openCart
+  );
+}
+
+/* =========================================
+   NEWSLETTER
+========================================= */
+
+const newsletter =
+  $("#newsletter");
+
+if (newsletter) {
+
+  newsletter.addEventListener(
+    "submit",
+    (event) => {
+
+      event.preventDefault();
+
+      showToast(
+        "You are on the list — a little treat is on its way."
+      );
+
+      event.target.reset();
+    }
+  );
+}
+
+/*
+Checkout is handled by auth.js.
+
+auth.js checks whether the customer
+is signed in and then securely sends
+the order to the Supabase Edge Function.
+
+Do NOT add another checkout handler
+here because that would bypass the
+login protection.
+*/
+
+loadProducts();
+
+
+/* =========================================
+   VERIFIED PURCHASE VERIFICATION
+========================================= */
+
+/*
+  This asks our Supabase Edge Function
+  whether PayFast has actually confirmed
+  this payment.
+
+  IMPORTANT:
+  This does NOT decide whether a payment
+  is real.
+
+  payfast-itn is still responsible for
+  verifying the actual PayFast transaction.
+
+  This function only reads the already
+  verified result.
+*/
 
 async function verifyPurchase(
   paymentId,
   attempts = 5
 ) {
-
   if (!paymentId) {
     return null;
   }
+
+  const config =
+    window.PETSHOP_CONFIG || {};
 
   if (
     !config.supabaseUrl ||
     !config.supabasePublishableKey
   ) {
-
     console.error(
       "Supabase configuration is missing."
     );
@@ -603,7 +904,6 @@ async function verifyPurchase(
     attempt < attempts;
     attempt++
   ) {
-
     try {
 
       const response =
@@ -635,7 +935,6 @@ async function verifyPurchase(
         result &&
         result.paid === true
       ) {
-
         return result;
       }
 
@@ -652,11 +951,11 @@ async function verifyPurchase(
     }
 
     /*
-      PayFast's ITN may reach Supabase
+      PayFast ITN may reach Supabase
       slightly before or after the browser
       returns to the website.
 
-      So we wait and check again.
+      Therefore we check several times.
     */
 
     if (
@@ -665,11 +964,12 @@ async function verifyPurchase(
     ) {
 
       await new Promise(
-        (resolve) =>
+        (resolve) => {
           setTimeout(
             resolve,
             2000
-          )
+          );
+        }
       );
     }
   }
@@ -678,9 +978,9 @@ async function verifyPurchase(
 }
 
 
-// ------------------------------------------------------------
-// HANDLE PAYFAST RETURN
-// ------------------------------------------------------------
+/* =========================================
+   PAYFAST RETURN HANDLING
+========================================= */
 
 async function handlePaymentReturn() {
 
@@ -690,36 +990,32 @@ async function handlePaymentReturn() {
     );
 
   const payment =
-    params.get(
-      "payment"
-    );
+    params.get("payment");
 
   const paymentId =
-    params.get(
-      "payment_id"
-    );
+    params.get("payment_id");
 
 
-  // ==========================================================
-  // SUCCESS RETURN
-  // ==========================================================
+  /* ---------------------------------------
+     SUCCESSFUL PAYMENT
+  --------------------------------------- */
 
   if (
     payment === "success"
   ) {
 
     /*
-      We MUST have a payment ID.
+      The new create-checkout function
+      adds payment_id to the return URL.
 
-      Without it we cannot verify which
-      PayFast transaction belongs to this
-      browser session.
+      Without it, we cannot safely verify
+      which payment belongs to this visit.
     */
 
     if (!paymentId) {
 
       console.error(
-        "Payment success returned without a payment ID."
+        "Payment success returned without payment_id."
       );
 
       window.history.replaceState(
@@ -729,16 +1025,18 @@ async function handlePaymentReturn() {
       );
 
       showToast(
-        "We could not verify the payment yet. Please contact us if you were charged."
+        "We could not verify this payment yet. Please contact us if you were charged."
       );
 
       return;
     }
 
 
-    // --------------------------------------------------------
-    // ASK OUR SERVER IF THE PAYMENT IS REALLY PAID
-    // --------------------------------------------------------
+    /*
+      Ask our secure Supabase function
+      whether the payment has already been
+      verified by payfast-itn.
+    */
 
     const verifiedPurchase =
       await verifyPurchase(
@@ -747,9 +1045,9 @@ async function handlePaymentReturn() {
       );
 
 
-    // --------------------------------------------------------
-    // PAYMENT VERIFIED
-    // --------------------------------------------------------
+    /* -------------------------------------
+       PAYMENT VERIFIED
+    ------------------------------------- */
 
     if (
       verifiedPurchase &&
@@ -758,7 +1056,7 @@ async function handlePaymentReturn() {
 
       /*
         Prevent the purchase event from
-        being sent again if the customer
+        being sent twice if the customer
         refreshes the page.
       */
 
@@ -771,9 +1069,9 @@ async function handlePaymentReturn() {
         ) === "1";
 
 
-      // ------------------------------------------------------
-      // SEND GA4 PURCHASE
-      // ------------------------------------------------------
+      /* -----------------------------------
+         GOOGLE ANALYTICS — PURCHASE
+      ----------------------------------- */
 
       if (!alreadyTracked) {
 
@@ -822,29 +1120,29 @@ async function handlePaymentReturn() {
       }
 
 
-      // ------------------------------------------------------
-      // NOW IT IS SAFE TO CLEAR THE CART
-      // ------------------------------------------------------
+      /* -----------------------------------
+         CLEAR CART
+      ----------------------------------- */
 
       cart = {};
 
       localStorage.removeItem(
-        CART_STORAGE_KEY
+        "moss-mud-cart"
       );
 
       renderCart();
 
 
-      // ------------------------------------------------------
-      // SHOW SUCCESS
-      // ------------------------------------------------------
+      /* -----------------------------------
+         SHOW SUCCESS MESSAGE
+      ----------------------------------- */
 
       showPaymentSuccess();
 
 
-      // ------------------------------------------------------
-      // CLEAN URL
-      // ------------------------------------------------------
+      /* -----------------------------------
+         CLEAN URL
+      ----------------------------------- */
 
       window.history.replaceState(
         {},
@@ -856,17 +1154,21 @@ async function handlePaymentReturn() {
     }
 
 
-    // --------------------------------------------------------
-    // NOT VERIFIED YET
-    // --------------------------------------------------------
+    /* -------------------------------------
+       PAYMENT NOT VERIFIED YET
+    ------------------------------------- */
 
     /*
-      We DO NOT clear the cart.
+      IMPORTANT:
 
-      We DO NOT send GA4 purchase.
+      We do NOT:
 
-      We DO NOT tell the customer that
-      the payment definitely succeeded.
+      - send purchase to GA4
+      - clear the cart
+      - show payment successful
+
+      because our backend has not confirmed
+      the payment yet.
     */
 
     window.history.replaceState(
@@ -883,9 +1185,9 @@ async function handlePaymentReturn() {
   }
 
 
-  // ==========================================================
-  // CANCELLED
-  // ==========================================================
+  /* ---------------------------------------
+     CANCELLED PAYMENT
+  --------------------------------------- */
 
   if (
     payment === "cancelled"
@@ -900,37 +1202,152 @@ async function handlePaymentReturn() {
     showToast(
       "Your payment was cancelled."
     );
-
-    return;
   }
 }
 
 
-// ============================================================
-// INITIALISE
-// ============================================================
+/* =========================================
+   SUCCESS MESSAGE
+========================================= */
 
-async function initialiseApp() {
+function showPaymentSuccess() {
 
-  loadCart();
+  const existing =
+    document.getElementById(
+      "payment-success"
+    );
 
-  await loadProducts();
+  if (existing) {
+    existing.remove();
+  }
 
-  renderCart();
+  const message =
+    document.createElement("div");
 
-  /*
-    This runs after the products/cart
-    are loaded, but payment verification
-    itself uses the secure Supabase
-    order record.
-  */
+  message.id =
+    "payment-success";
 
-  await handlePaymentReturn();
+  message.innerHTML = `
+    <div
+      style="
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,0.55);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        z-index:99999;
+        padding:20px;
+      "
+    >
+
+      <div
+        style="
+          background:#fff;
+          max-width:500px;
+          width:100%;
+          border-radius:20px;
+          padding:40px 30px;
+          text-align:center;
+          box-shadow:0 20px 60px rgba(0,0,0,0.25);
+        "
+      >
+
+        <div
+          style="
+            width:64px;
+            height:64px;
+            margin:0 auto 20px;
+            border-radius:50%;
+            background:#3e4e3b;
+            color:white;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:32px;
+          "
+        >
+          ✓
+        </div>
+
+        <p
+          style="
+            margin:0 0 10px;
+            font-size:13px;
+            letter-spacing:2px;
+            text-transform:uppercase;
+            opacity:.65;
+          "
+        >
+          Order confirmed
+        </p>
+
+        <h2
+          style="
+            margin:0 0 15px;
+            font-size:30px;
+          "
+        >
+          Congratulations on your purchase!
+        </h2>
+
+        <p
+          style="
+            margin:0 0 25px;
+            line-height:1.6;
+            opacity:.75;
+          "
+        >
+          Thank you for shopping with
+          Paws Incorporated.
+          Your payment was successful and
+          your order has been received.
+        </p>
+
+        <button
+          id="success-continue"
+          type="button"
+          style="
+            border:0;
+            border-radius:999px;
+            padding:14px 25px;
+            background:#3e4e3b;
+            color:white;
+            cursor:pointer;
+            font-size:15px;
+          "
+        >
+          Continue shopping
+        </button>
+
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(
+    message
+  );
+
+  const continueButton =
+    document.getElementById(
+      "success-continue"
+    );
+
+  if (continueButton) {
+
+    continueButton.addEventListener(
+      "click",
+      () => {
+        message.remove();
+      }
+    );
+  }
 }
 
 
-// ------------------------------------------------------------
-// START APP
-// ------------------------------------------------------------
+/* =========================================
+   START PAYFAST RETURN CHECK
+========================================= */
 
-initialiseApp();
+handlePaymentReturn();

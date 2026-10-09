@@ -1,3 +1,4 @@
+
 const SAMPLE_PRODUCTS = [
   {
     id: "moss-bed",
@@ -125,7 +126,6 @@ function showToast(message) {
   if (!toast) return;
 
   toast.textContent = message;
-
   toast.classList.add("show");
 
   clearTimeout(window.toastTimer);
@@ -194,59 +194,133 @@ function renderFilters() {
 }
 
 /* =========================================
+   PAWSEASE LEASH SIZE HELPERS
+========================================= */
+
+// Keep the three existing Supabase records.
+// These IDs identify the exact products.
+
+const LEASH_PRODUCT_IDS = new Set([
+  "6b38dc19-94a8-461a-ae38-d2b560d97c45",
+  "a83020ef-9093-43ec-b8bb-254c89f7c41d",
+  "d9b2c647-2bf4-4a10-9f23-a6d9cd51673c"
+]);
+
+function isLeashProduct(product) {
+  return (
+    LEASH_PRODUCT_IDS.has(String(product.id)) ||
+    /^PAWS-LEASH-[SML]$/i.test(product.sku || "")
+  );
+}
+
+function getLeashSize(product) {
+  const skuMatch = (product.sku || "").match(
+    /^PAWS-LEASH-([SML])$/i
+  );
+
+  if (skuMatch) {
+    return skuMatch[1].toUpperCase();
+  }
+
+  const name = (product.name || "").toLowerCase();
+
+  if (name.includes("small")) return "S";
+  if (name.includes("medium")) return "M";
+  if (name.includes("large")) return "L";
+
+  return "";
+}
+
+function getLeashSizeName(size) {
+  return {
+    S: "Small",
+    M: "Medium",
+    L: "Large"
+  }[size] || size;
+}
+
+/* =========================================
    PRODUCTS
 ========================================= */
 
 function renderProducts() {
   const grid = $("#product-grid");
-
   const pieceCount = $("#piece-count");
-
   const searchInput = $("#search");
 
   if (!grid) return;
 
-  const searchTerm =
-    searchInput
-      ? searchInput.value
-          .trim()
-          .toLowerCase()
-      : "";
+  const searchTerm = searchInput
+    ? searchInput.value.trim().toLowerCase()
+    : "";
 
-  const filteredProducts =
-    products.filter((product) => {
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory =
+      selectedCategory === "All pieces" ||
+      product.category === selectedCategory;
 
-      const matchesCategory =
-        selectedCategory === "All pieces" ||
-        product.category === selectedCategory;
+    const searchableText = `
+      ${product.name || ""}
+      ${product.category || ""}
+      ${product.description || ""}
+      ${product.badge || ""}
+      ${product.sku || ""}
+    `.toLowerCase();
 
-      const searchableText = `
-        ${product.name || ""}
-        ${product.category || ""}
-        ${product.description || ""}
-        ${product.badge || ""}
-      `.toLowerCase();
+    const matchesSearch =
+      !searchTerm || searchableText.includes(searchTerm);
 
-      const matchesSearch =
-        !searchTerm ||
-        searchableText.includes(searchTerm);
+    return matchesCategory && matchesSearch;
+  });
+
+  // Find the actual Supabase records for each leash size.
+  const leashVariants = products
+    .filter(isLeashProduct)
+    .sort((a, b) => {
+      const order = { S: 1, M: 2, L: 3 };
 
       return (
-        matchesCategory &&
-        matchesSearch
+        (order[getLeashSize(a)] || 99) -
+        (order[getLeashSize(b)] || 99)
       );
     });
 
+  // Show one leash card instead of three.
+  const displayProducts = [];
+  let leashAdded = false;
+
+  filteredProducts.forEach((product) => {
+    if (!isLeashProduct(product)) {
+      displayProducts.push({
+        product,
+        variants: null
+      });
+
+      return;
+    }
+
+    if (!leashAdded && leashVariants.length > 0) {
+      const mediumVariant = leashVariants.find(
+        (item) => getLeashSize(item) === "M"
+      );
+
+      displayProducts.push({
+        product: mediumVariant || leashVariants[0],
+        variants: leashVariants
+      });
+
+      leashAdded = true;
+    }
+  });
+
   if (pieceCount) {
     pieceCount.textContent =
-      `${filteredProducts.length} ${
-        filteredProducts.length === 1
-          ? "piece"
-          : "pieces"
+      `${displayProducts.length} ${
+        displayProducts.length === 1 ? "piece" : "pieces"
       }`;
   }
 
-  if (!filteredProducts.length) {
+  if (!displayProducts.length) {
     grid.innerHTML = `
       <div class="empty">
         No pieces found.
@@ -256,20 +330,38 @@ function renderProducts() {
     return;
   }
 
-  grid.innerHTML =
-    filteredProducts
-      .map((product) => {
+  grid.innerHTML = displayProducts.map(
+    ({ product, variants }) => {
 
-        const badge =
-          product.badge
-            ? `
-              <span>
-                ${escapeHtml(
-                  product.badge
-                )}
-              </span>
-            `
-            : "";
+      /* -------------------------------------
+         SINGLE LEASH CARD WITH SIZE SELECTOR
+      ------------------------------------- */
+
+      if (variants) {
+        const defaultVariant =
+          variants.find(
+            (item) => getLeashSize(item) === "M"
+          ) || variants[0];
+
+        const lowestPrice = Math.min(
+          ...variants.map(
+            (item) => Number(item.price_zar) || 0
+          )
+        );
+
+        const sizeOptions = variants.map((variant) => {
+          const size = getLeashSize(variant);
+
+          return `
+            <option
+              value="${escapeHtml(variant.id)}"
+              ${variant.id === defaultVariant.id ? "selected" : ""}
+            >
+              ${escapeHtml(getLeashSizeName(size))} —
+              ${money(variant.price_zar)}
+            </option>
+          `;
+        }).join("");
 
         return `
           <article class="product-card">
@@ -277,25 +369,15 @@ function renderProducts() {
             <div class="product-image">
 
               <img
-                src="${escapeHtml(
-                  product.image_url
-                )}"
-                alt="${escapeHtml(
-                  product.name
-                )}"
+                src="${escapeHtml(defaultVariant.image_url)}"
+                alt="PawsEase No-Pull Leash"
                 loading="lazy"
               >
 
-              ${badge}
-
               <button
                 type="button"
-                data-add="${escapeHtml(
-                  product.id
-                )}"
-                aria-label="Add ${escapeHtml(
-                  product.name
-                )} to bag"
+                data-leash-add
+                aria-label="Add selected PawsEase leash size to bag"
               >
                 +
               </button>
@@ -305,39 +387,109 @@ function renderProducts() {
             <div class="product-info">
 
               <div>
-
-                <small>
-                  ${escapeHtml(
-                    product.category || ""
-                  )}
-                </small>
+                <small>Walks</small>
 
                 <h3>
-                  ${escapeHtml(
-                    product.name
-                  )}
+                  PawsEase No-Pull Leash
                 </h3>
-
               </div>
 
               <b>
-                ${money(
-                  product.price_zar
-                )}
+                From ${money(lowestPrice)}
               </b>
 
               <p>
-                ${escapeHtml(
-                  product.description || ""
-                )}
+                ${escapeHtml(defaultVariant.description || "")}
               </p>
+
+              <label>
+                Choose your dog's size
+
+                <select
+                  data-leash-size
+                  aria-label="Choose PawsEase leash size"
+                  style="
+                    display:block;
+                    width:100%;
+                    padding:10px;
+                    margin-top:8px;
+                    border:1px solid #d6d6d0;
+                    border-radius:8px;
+                    background:#fff;
+                    color:#222;
+                  "
+                >
+                  ${sizeOptions}
+                </select>
+              </label>
 
             </div>
 
           </article>
         `;
-      })
-      .join("");
+      }
+
+      /* -------------------------------------
+         ALL OTHER PRODUCTS STAY UNCHANGED
+      ------------------------------------- */
+
+      const badge = product.badge
+        ? `
+          <span>
+            ${escapeHtml(product.badge)}
+          </span>
+        `
+        : "";
+
+      return `
+        <article class="product-card">
+
+          <div class="product-image">
+
+            <img
+              src="${escapeHtml(product.image_url)}"
+              alt="${escapeHtml(product.name)}"
+              loading="lazy"
+            >
+
+            ${badge}
+
+            <button
+              type="button"
+              data-add="${escapeHtml(product.id)}"
+              aria-label="Add ${escapeHtml(product.name)} to bag"
+            >
+              +
+            </button>
+
+          </div>
+
+          <div class="product-info">
+
+            <div>
+              <small>
+                ${escapeHtml(product.category || "")}
+              </small>
+
+              <h3>
+                ${escapeHtml(product.name)}
+              </h3>
+            </div>
+
+            <b>
+              ${money(product.price_zar)}
+            </b>
+
+            <p>
+              ${escapeHtml(product.description || "")}
+            </p>
+
+          </div>
+
+        </article>
+      `;
+    }
+  ).join("");
 }
 
 /* =========================================
@@ -346,176 +498,127 @@ function renderProducts() {
 
 function renderCart() {
   const cartItems = $("#cart-items");
-
   const cartSubtotal = $("#cart-subtotal");
-
   const cartShipping = $("#cart-shipping");
-
   const cartTotal = $("#cart-total");
-
   const bagCount = $("#bag-count");
 
   if (!cartItems) return;
 
   const items = Object.values(cart);
 
-  const totalQuantity =
-    items.reduce(
-      (total, item) => {
-        return (
-          total +
-          Number(
-            item.quantity || 0
-          )
-        );
-      },
-      0
-    );
+  const totalQuantity = items.reduce(
+    (total, item) => {
+      return total + Number(item.quantity || 0);
+    },
+    0
+  );
 
-  const subtotal =
-    items.reduce(
-      (total, item) => {
-        return (
-          total +
-          Number(
-            item.price_zar || 0
-          ) *
-          Number(
-            item.quantity || 0
-          )
-        );
-      },
-      0
-    );
+  const subtotal = items.reduce(
+    (total, item) => {
+      return (
+        total +
+        Number(item.price_zar || 0) *
+        Number(item.quantity || 0)
+      );
+    },
+    0
+  );
 
-  const shipping =
-    items.length > 0
-      ? SHIPPING_FEE
-      : 0;
+  const shipping = items.length > 0
+    ? SHIPPING_FEE
+    : 0;
 
-  const finalTotal =
-    subtotal + shipping;
+  const finalTotal = subtotal + shipping;
 
   if (bagCount) {
-    bagCount.textContent =
-      totalQuantity;
+    bagCount.textContent = totalQuantity;
   }
 
   if (cartSubtotal) {
-    cartSubtotal.textContent =
-      money(subtotal);
+    cartSubtotal.textContent = money(subtotal);
   }
 
   if (cartShipping) {
-    cartShipping.textContent =
-      money(shipping);
+    cartShipping.textContent = money(shipping);
   }
 
   if (cartTotal) {
-    cartTotal.textContent =
-      money(finalTotal);
+    cartTotal.textContent = money(finalTotal);
   }
 
   if (!items.length) {
     cartItems.innerHTML = `
       <div class="empty-cart">
-
-        <h3>
-          Your bag is waiting.
-        </h3>
+        <h3>Your bag is waiting.</h3>
 
         <p>
           Add something lovely for your pet to get started.
         </p>
-
       </div>
     `;
 
     return;
   }
 
-  cartItems.innerHTML =
-    items
-      .map((item) => {
+  cartItems.innerHTML = items.map((item) => {
+    const quantity = Number(item.quantity || 0);
 
-        const quantity =
-          Number(
-            item.quantity || 0
-          );
+    return `
+      <div class="cart-row">
 
-        return `
-          <div class="cart-row">
+        <img
+          src="${escapeHtml(item.image_url)}"
+          alt="${escapeHtml(item.name)}"
+        >
 
-            <img
-              src="${escapeHtml(
-                item.image_url
-              )}"
-              alt="${escapeHtml(
-                item.name
-              )}"
-            >
+        <div>
 
-            <div>
+          <div class="cart-title">
 
-              <div class="cart-title">
+            <span>
+              ${escapeHtml(item.name)}
+            </span>
 
-                <span>
-                  ${escapeHtml(
-                    item.name
-                  )}
-                </span>
-
-                <b>
-                  ${money(
-                    Number(
-                      item.price_zar || 0
-                    ) *
-                    quantity
-                  )}
-                </b>
-
-              </div>
-
-              <small>
-                ${escapeHtml(
-                  item.category || ""
-                )}
-              </small>
-
-              <div class="quantity">
-
-                <button
-                  type="button"
-                  data-minus="${escapeHtml(
-                    item.id
-                  )}"
-                  aria-label="Decrease quantity"
-                >
-                  −
-                </button>
-
-                <span>
-                  ${quantity}
-                </span>
-
-                <button
-                  type="button"
-                  data-plus="${escapeHtml(
-                    item.id
-                  )}"
-                  aria-label="Increase quantity"
-                >
-                  +
-                </button>
-
-              </div>
-
-            </div>
+            <b>
+              ${money(
+                Number(item.price_zar || 0) * quantity
+              )}
+            </b>
 
           </div>
-        `;
-      })
-      .join("");
+
+          <small>
+            ${escapeHtml(item.category || "")}
+          </small>
+
+          <div class="quantity">
+
+            <button
+              type="button"
+              data-minus="${escapeHtml(item.id)}"
+              aria-label="Decrease quantity"
+            >
+              −
+            </button>
+
+            <span>${quantity}</span>
+
+            <button
+              type="button"
+              data-plus="${escapeHtml(item.id)}"
+              aria-label="Increase quantity"
+            >
+              +
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+  }).join("");
 }
 
 /* =========================================
@@ -523,26 +626,17 @@ function renderCart() {
 ========================================= */
 
 function addToCart(productId) {
-  const product =
-    products.find((item) => {
-      return (
-        String(item.id) ===
-        String(productId)
-      );
-    });
+  const product = products.find((item) => {
+    return String(item.id) === String(productId);
+  });
 
   if (!product) {
-    showToast(
-      "Product could not be found."
-    );
-
+    showToast("Product could not be found.");
     return;
   }
 
   const newQuantity =
-    Number(
-      cart[productId]?.quantity || 0
-    ) + 1;
+    Number(cart[productId]?.quantity || 0) + 1;
 
   cart[productId] = {
     ...product,
@@ -551,42 +645,28 @@ function addToCart(productId) {
 
   saveCart();
 
-  /* =======================================
-     GOOGLE ANALYTICS — ADD TO CART
-  ======================================= */
-
   trackGA4("add_to_cart", {
     currency: "ZAR",
-    value:
-      Number(product.price_zar) || 0,
+    value: Number(product.price_zar) || 0,
     items: [
       getGA4Item(product, 1)
     ]
   });
 
-  showToast(
-    `${product.name} added to your bag`
-  );
+  showToast(`${product.name} added to your bag`);
 }
 
 /* =========================================
    UPDATE QUANTITY
 ========================================= */
 
-function updateQuantity(
-  productId,
-  change
-) {
+function updateQuantity(productId, change) {
   if (!cart[productId]) return;
 
   cart[productId].quantity =
-    Number(
-      cart[productId].quantity || 0
-    ) + change;
+    Number(cart[productId].quantity || 0) + change;
 
-  if (
-    cart[productId].quantity < 1
-  ) {
+  if (cart[productId].quantity < 1) {
     delete cart[productId];
   }
 
@@ -598,17 +678,13 @@ function updateQuantity(
 ========================================= */
 
 function openCart() {
-  const drawer =
-    $("#cart-drawer");
+  const drawer = $("#cart-drawer");
 
   if (!drawer) return;
 
   drawer.classList.add("open");
 
-  drawer.setAttribute(
-    "aria-hidden",
-    "false"
-  );
+  drawer.setAttribute("aria-hidden", "false");
 }
 
 /* =========================================
@@ -616,31 +692,23 @@ function openCart() {
 ========================================= */
 
 function closeCart() {
-  const drawer =
-    $("#cart-drawer");
+  const drawer = $("#cart-drawer");
 
   if (!drawer) return;
 
-  drawer.classList.remove(
-    "open"
-  );
+  drawer.classList.remove("open");
 
-  drawer.setAttribute(
-    "aria-hidden",
-    "true"
-  );
+  drawer.setAttribute("aria-hidden", "true");
 }
 
 /* =========================================
-   LOAD PRODUCTS
+   LOAD PRODUCTS FROM SUPABASE
 ========================================= */
 
 async function loadProducts() {
-  const config =
-    window.PETSHOP_CONFIG || {};
+  const config = window.PETSHOP_CONFIG || {};
 
   try {
-
     if (
       !config.supabaseUrl ||
       !config.supabasePublishableKey
@@ -662,39 +730,29 @@ async function loadProducts() {
         config.supabasePublishableKey
       );
 
-    const result =
-      await supabaseClient
-        .from("products")
-        .select("*")
-        .eq(
-          "active",
-          true
-        )
-        .order("name");
+    const result = await supabaseClient
+      .from("products")
+      .select("*")
+      .eq("active", true)
+      .order("name");
 
     if (result.error) {
       throw result.error;
     }
 
-    products =
-      result.data?.length
-        ? result.data
-        : SAMPLE_PRODUCTS;
+    products = result.data?.length
+      ? result.data
+      : SAMPLE_PRODUCTS;
 
-    console.log(
-      "Products loaded:",
-      products.length
-    );
+    console.log("Products loaded:", products.length);
 
   } catch (error) {
-
     console.error(
       "Supabase product loading failed:",
       error
     );
 
-    products =
-      SAMPLE_PRODUCTS;
+    products = SAMPLE_PRODUCTS;
 
     showToast(
       "Using sample products because the catalogue could not be loaded."
@@ -710,133 +768,103 @@ async function loadProducts() {
    CLICK HANDLERS
 ========================================= */
 
-document.addEventListener(
-  "click",
-  (event) => {
+document.addEventListener("click", (event) => {
 
-    const categoryButton =
-      event.target.closest(
-        "[data-category]"
-      );
+  const categoryButton =
+    event.target.closest("[data-category]");
 
-    if (categoryButton) {
+  if (categoryButton) {
+    selectedCategory = categoryButton.dataset.category;
 
-      selectedCategory =
-        categoryButton.dataset.category;
+    renderFilters();
+    renderProducts();
 
-      renderFilters();
-      renderProducts();
-
-      return;
-    }
-
-    const addButton =
-      event.target.closest(
-        "[data-add]"
-      );
-
-    if (addButton) {
-
-      addToCart(
-        addButton.dataset.add
-      );
-
-      return;
-    }
-
-    const plusButton =
-      event.target.closest(
-        "[data-plus]"
-      );
-
-    if (plusButton) {
-
-      updateQuantity(
-        plusButton.dataset.plus,
-        1
-      );
-
-      return;
-    }
-
-    const minusButton =
-      event.target.closest(
-        "[data-minus]"
-      );
-
-    if (minusButton) {
-
-      updateQuantity(
-        minusButton.dataset.minus,
-        -1
-      );
-
-      return;
-    }
-
-    if (
-      event.target.closest(
-        "[data-close-cart]"
-      )
-    ) {
-
-      closeCart();
-    }
+    return;
   }
-);
+
+  // The selected size's actual Supabase ID
+  // is passed into the existing cart function.
+  const leashAddButton =
+    event.target.closest("[data-leash-add]");
+
+  if (leashAddButton) {
+    const card = leashAddButton.closest(".product-card");
+
+    const sizeSelect =
+      card?.querySelector("[data-leash-size]");
+
+    if (sizeSelect) {
+      addToCart(sizeSelect.value);
+    }
+
+    return;
+  }
+
+  const addButton =
+    event.target.closest("[data-add]");
+
+  if (addButton) {
+    addToCart(addButton.dataset.add);
+    return;
+  }
+
+  const plusButton =
+    event.target.closest("[data-plus]");
+
+  if (plusButton) {
+    updateQuantity(plusButton.dataset.plus, 1);
+    return;
+  }
+
+  const minusButton =
+    event.target.closest("[data-minus]");
+
+  if (minusButton) {
+    updateQuantity(minusButton.dataset.minus, -1);
+    return;
+  }
+
+  if (event.target.closest("[data-close-cart]")) {
+    closeCart();
+  }
+});
 
 /* =========================================
    SEARCH
 ========================================= */
 
-const searchInput =
-  $("#search");
+const searchInput = $("#search");
 
 if (searchInput) {
-
-  searchInput.addEventListener(
-    "input",
-    renderProducts
-  );
+  searchInput.addEventListener("input", renderProducts);
 }
 
 /* =========================================
    BAG BUTTON
 ========================================= */
 
-const bagButton =
-  $("#bag-button");
+const bagButton = $("#bag-button");
 
 if (bagButton) {
-
-  bagButton.addEventListener(
-    "click",
-    openCart
-  );
+  bagButton.addEventListener("click", openCart);
 }
 
 /* =========================================
    NEWSLETTER
 ========================================= */
 
-const newsletter =
-  $("#newsletter");
+const newsletter = $("#newsletter");
 
 if (newsletter) {
+  newsletter.addEventListener("submit", (event) => {
+    event.preventDefault();
 
-  newsletter.addEventListener(
-    "submit",
-    (event) => {
+    showToast(
+      "You are on the list — a little treat is on its way."
+    );
 
-      event.preventDefault();
-
-      showToast(
-        "You are on the list — a little treat is on its way."
-      );
-
-      event.target.reset();
-    }
-  );
+    event.target.reset();
+  });
 }
 
 /*
@@ -853,7 +881,6 @@ login protection.
 
 loadProducts();
 
-
 /* =========================================
    VERIFIED PURCHASE VERIFICATION
 ========================================= */
@@ -863,72 +890,42 @@ loadProducts();
   whether PayFast has actually confirmed
   this payment.
 
-  IMPORTANT:
-  This does NOT decide whether a payment
-  is real.
-
-  payfast-itn is still responsible for
+  payfast-itn remains responsible for
   verifying the actual PayFast transaction.
-
-  This function only reads the already
-  verified result.
 */
 
-async function verifyPurchase(
-  paymentId,
-  attempts = 5
-) {
+async function verifyPurchase(paymentId, attempts = 5) {
   if (!paymentId) {
     return null;
   }
 
-  const config =
-    window.PETSHOP_CONFIG || {};
+  const config = window.PETSHOP_CONFIG || {};
 
   if (
     !config.supabaseUrl ||
     !config.supabasePublishableKey
   ) {
-    console.error(
-      "Supabase configuration is missing."
-    );
-
+    console.error("Supabase configuration is missing.");
     return null;
   }
 
   const verifyUrl =
     `${config.supabaseUrl}/functions/v1/verify-purchase`;
 
-  for (
-    let attempt = 0;
-    attempt < attempts;
-    attempt++
-  ) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
+      const response = await fetch(verifyUrl, {
+        method: "POST",
 
-      const response =
-        await fetch(
-          verifyUrl,
-          {
-            method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": config.supabasePublishableKey
+        },
 
-            headers: {
-              "Content-Type":
-                "application/json",
+        body: JSON.stringify({ paymentId })
+      });
 
-              "apikey":
-                config.supabasePublishableKey
-            },
-
-            body:
-              JSON.stringify({
-                paymentId
-              })
-          }
-        );
-
-      const result =
-        await response.json();
+      const result = await response.json();
 
       if (
         response.ok &&
@@ -943,77 +940,39 @@ async function verifyPurchase(
       );
 
     } catch (error) {
-
       console.error(
         "Purchase verification failed:",
         error
       );
     }
 
-    /*
-      PayFast ITN may reach Supabase
-      slightly before or after the browser
-      returns to the website.
-
-      Therefore we check several times.
-    */
-
-    if (
-      attempt <
-      attempts - 1
-    ) {
-
-      await new Promise(
-        (resolve) => {
-          setTimeout(
-            resolve,
-            2000
-          );
-        }
-      );
+    if (attempt < attempts - 1) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 2000);
+      });
     }
   }
 
   return null;
 }
 
-
 /* =========================================
    PAYFAST RETURN HANDLING
 ========================================= */
 
 async function handlePaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
 
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
-
-  const payment =
-    params.get("payment");
-
-  const paymentId =
-    params.get("payment_id");
-
+  const payment = params.get("payment");
+  const paymentId = params.get("payment_id");
 
   /* ---------------------------------------
      SUCCESSFUL PAYMENT
   --------------------------------------- */
 
-  if (
-    payment === "success"
-  ) {
-
-    /*
-      The new create-checkout function
-      adds payment_id to the return URL.
-
-      Without it, we cannot safely verify
-      which payment belongs to this visit.
-    */
+  if (payment === "success") {
 
     if (!paymentId) {
-
       console.error(
         "Payment success returned without payment_id."
       );
@@ -1031,19 +990,8 @@ async function handlePaymentReturn() {
       return;
     }
 
-
-    /*
-      Ask our secure Supabase function
-      whether the payment has already been
-      verified by payfast-itn.
-    */
-
     const verifiedPurchase =
-      await verifyPurchase(
-        paymentId,
-        5
-      );
-
+      await verifyPurchase(paymentId, 5);
 
     /* -------------------------------------
        PAYMENT VERIFIED
@@ -1053,65 +1001,37 @@ async function handlePaymentReturn() {
       verifiedPurchase &&
       verifiedPurchase.paid === true
     ) {
-
-      /*
-        Prevent the purchase event from
-        being sent twice if the customer
-        refreshes the page.
-      */
-
       const trackingKey =
         `paws-ga4-purchase-${paymentId}`;
 
       const alreadyTracked =
-        localStorage.getItem(
-          trackingKey
-        ) === "1";
-
+        localStorage.getItem(trackingKey) === "1";
 
       /* -----------------------------------
          GOOGLE ANALYTICS — PURCHASE
       ----------------------------------- */
 
       if (!alreadyTracked) {
+        trackGA4("purchase", {
+          transaction_id:
+            String(verifiedPurchase.orderId),
 
-        trackGA4(
-          "purchase",
-          {
-            transaction_id:
-              String(
-                verifiedPurchase.orderId
-              ),
+          currency:
+            verifiedPurchase.currency || "ZAR",
 
-            currency:
-              verifiedPurchase.currency ||
-              "ZAR",
+          value:
+            Number(verifiedPurchase.value || 0),
 
-            value:
-              Number(
-                verifiedPurchase.value ||
-                0
-              ),
+          shipping:
+            Number(verifiedPurchase.shipping || 0),
 
-            shipping:
-              Number(
-                verifiedPurchase.shipping ||
-                0
-              ),
+          items:
+            Array.isArray(verifiedPurchase.items)
+              ? verifiedPurchase.items
+              : []
+        });
 
-            items:
-              Array.isArray(
-                verifiedPurchase.items
-              )
-                ? verifiedPurchase.items
-                : []
-          }
-        );
-
-        localStorage.setItem(
-          trackingKey,
-          "1"
-        );
+        localStorage.setItem(trackingKey, "1");
 
         console.log(
           "GA4 purchase sent:",
@@ -1119,26 +1039,21 @@ async function handlePaymentReturn() {
         );
       }
 
-
       /* -----------------------------------
          CLEAR CART
       ----------------------------------- */
 
       cart = {};
 
-      localStorage.removeItem(
-        "moss-mud-cart"
-      );
+      localStorage.removeItem("moss-mud-cart");
 
       renderCart();
-
 
       /* -----------------------------------
          SHOW SUCCESS MESSAGE
       ----------------------------------- */
 
       showPaymentSuccess();
-
 
       /* -----------------------------------
          CLEAN URL
@@ -1153,23 +1068,9 @@ async function handlePaymentReturn() {
       return;
     }
 
-
     /* -------------------------------------
        PAYMENT NOT VERIFIED YET
     ------------------------------------- */
-
-    /*
-      IMPORTANT:
-
-      We do NOT:
-
-      - send purchase to GA4
-      - clear the cart
-      - show payment successful
-
-      because our backend has not confirmed
-      the payment yet.
-    */
 
     window.history.replaceState(
       {},
@@ -1184,48 +1085,36 @@ async function handlePaymentReturn() {
     return;
   }
 
-
   /* ---------------------------------------
      CANCELLED PAYMENT
   --------------------------------------- */
 
-  if (
-    payment === "cancelled"
-  ) {
-
+  if (payment === "cancelled") {
     window.history.replaceState(
       {},
       document.title,
       window.location.pathname
     );
 
-    showToast(
-      "Your payment was cancelled."
-    );
+    showToast("Your payment was cancelled.");
   }
 }
-
 
 /* =========================================
    SUCCESS MESSAGE
 ========================================= */
 
 function showPaymentSuccess() {
-
   const existing =
-    document.getElementById(
-      "payment-success"
-    );
+    document.getElementById("payment-success");
 
   if (existing) {
     existing.remove();
   }
 
-  const message =
-    document.createElement("div");
+  const message = document.createElement("div");
 
-  message.id =
-    "payment-success";
+  message.id = "payment-success";
 
   message.innerHTML = `
     <div
@@ -1321,30 +1210,20 @@ function showPaymentSuccess() {
         </button>
 
       </div>
-
     </div>
   `;
 
-  document.body.appendChild(
-    message
-  );
+  document.body.appendChild(message);
 
   const continueButton =
-    document.getElementById(
-      "success-continue"
-    );
+    document.getElementById("success-continue");
 
   if (continueButton) {
-
-    continueButton.addEventListener(
-      "click",
-      () => {
-        message.remove();
-      }
-    );
+    continueButton.addEventListener("click", () => {
+      message.remove();
+    });
   }
 }
-
 
 /* =========================================
    START PAYFAST RETURN CHECK

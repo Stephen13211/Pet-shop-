@@ -113,8 +113,9 @@ const money = (value) => {
    MONTHLY SPECIALS — 10% OFF
 ========================================= */
 
-// The selling price remains the actual price in Supabase.
-// This calculates a reference price 10% higher than it.
+// Product prices remain unchanged in Supabase.
+// This calculates a reference price 10% higher than
+// the current selling price for display purposes.
 
 function referencePrice(value) {
   return (Number(value) || 0) / 0.90;
@@ -140,9 +141,12 @@ function initMonthlySpecials() {
       color: #fff;
       text-align: center;
       padding: 18px 14px;
-      margin: 0;
+      margin: 24px 0;
       position: relative;
       z-index: 1;
+      border-radius: 14px;
+      box-sizing: border-box;
+      width: 100%;
     }
 
     #monthly-specials .specials-title {
@@ -207,6 +211,7 @@ function initMonthlySpecials() {
     @media (max-width: 480px) {
       #monthly-specials {
         padding: 15px 10px;
+        margin: 18px 0;
       }
 
       #monthly-specials .specials-description {
@@ -252,12 +257,21 @@ function initMonthlySpecials() {
     ></div>
   `;
 
-  const promo = document.querySelector(".promo");
+  // Put the banner inside the shop section,
+  // immediately before the filters and product grid.
+  const productSection = document.querySelector("#shop");
 
-  if (promo) {
-    promo.insertAdjacentElement("afterend", banner);
+  if (productSection) {
+    const sectionHeading =
+      productSection.querySelector(".section-heading");
+
+    if (sectionHeading) {
+      sectionHeading.insertAdjacentElement("afterend", banner);
+    } else {
+      productSection.prepend(banner);
+    }
   } else {
-    document.body.prepend(banner);
+    document.body.appendChild(banner);
   }
 
   function updateCountdown() {
@@ -1055,7 +1069,6 @@ if (newsletter) {
 
 /*
 Checkout is handled by auth.js.
-
 Do not add another checkout handler here.
 */
 

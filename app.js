@@ -103,12 +103,209 @@ let cart = JSON.parse(
   localStorage.getItem("moss-mud-cart") || "{}"
 );
 
-const $ = (selector) =>
-  document.querySelector(selector);
+const $ = (selector) => document.querySelector(selector);
 
 const money = (value) => {
   return `R${Number(value).toLocaleString("en-ZA")}`;
 };
+
+/* =========================================
+   MONTHLY SPECIALS — 10% OFF
+========================================= */
+
+// The selling price remains the actual price in Supabase.
+// This calculates a reference price 10% higher than it.
+
+function referencePrice(value) {
+  return (Number(value) || 0) / 0.90;
+}
+
+function referenceMoney(value) {
+  return `R${referencePrice(value).toLocaleString("en-ZA", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+}
+
+function initMonthlySpecials() {
+  if (document.getElementById("monthly-specials")) return;
+
+  const style = document.createElement("style");
+
+  style.id = "monthly-specials-styles";
+
+  style.textContent = `
+    #monthly-specials {
+      background: linear-gradient(110deg, #34234b, #d92d56);
+      color: #fff;
+      text-align: center;
+      padding: 18px 14px;
+      margin: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    #monthly-specials .specials-title {
+      font-size: clamp(20px, 4vw, 28px);
+      font-weight: 800;
+      margin: 0 0 5px;
+    }
+
+    #monthly-specials .specials-description {
+      margin: 0 0 9px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    #monthly-specials .specials-countdown {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .4px;
+    }
+
+    .product-image {
+      position: relative;
+    }
+
+    .monthly-sale-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 3;
+      background: #d92d56;
+      color: #fff;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: .4px;
+      pointer-events: none;
+    }
+
+    .monthly-price {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 7px;
+      margin: 8px 0;
+    }
+
+    .monthly-price .sale-price {
+      font-size: 17px;
+      font-weight: 800;
+      color: #d92d56;
+    }
+
+    .monthly-price .reference-price {
+      color: #85858d;
+      font-size: 13px;
+      font-weight: 400;
+      text-decoration: line-through;
+    }
+
+    @media (max-width: 480px) {
+      #monthly-specials {
+        padding: 15px 10px;
+      }
+
+      #monthly-specials .specials-description {
+        font-size: 12px;
+      }
+
+      .monthly-sale-badge {
+        top: 8px;
+        left: 8px;
+        padding: 6px 8px;
+        font-size: 10px;
+      }
+
+      .monthly-price {
+        gap: 5px;
+      }
+
+      .monthly-price .sale-price {
+        font-size: 15px;
+      }
+
+      .monthly-price .reference-price {
+        font-size: 12px;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+
+  const banner = document.createElement("section");
+  banner.id = "monthly-specials";
+  banner.setAttribute("aria-label", "Monthly specials");
+
+  banner.innerHTML = `
+    <p class="specials-title"></p>
+    <p class="specials-description">
+      Treat your best friend to something special this month.
+    </p>
+    <div
+      class="specials-countdown"
+      id="specials-countdown"
+      aria-live="polite"
+    ></div>
+  `;
+
+  const promo = document.querySelector(".promo");
+
+  if (promo) {
+    promo.insertAdjacentElement("afterend", banner);
+  } else {
+    document.body.prepend(banner);
+  }
+
+  function updateCountdown() {
+    const now = new Date();
+
+    const nextMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1,
+      0, 0, 0, 0
+    );
+
+    const remaining = Math.max(
+      0,
+      nextMonth.getTime() - now.getTime()
+    );
+
+    const days = Math.floor(remaining / 86400000);
+    const hours = Math.floor((remaining % 86400000) / 3600000);
+    const minutes = Math.floor((remaining % 3600000) / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+
+    const monthName = now.toLocaleDateString("en-ZA", {
+      month: "long"
+    });
+
+    const title = banner.querySelector(".specials-title");
+    const countdown = document.getElementById("specials-countdown");
+
+    if (title) {
+      title.textContent = `${monthName} Specials — 10% OFF`;
+    }
+
+    if (countdown) {
+      const nextMonthName = nextMonth.toLocaleDateString("en-ZA", {
+        month: "long"
+      });
+
+      countdown.textContent =
+        `${days}d ${hours}h ${minutes}m ${seconds}s remaining` +
+        ` · Next update: ${nextMonthName}`;
+    }
+  }
+
+  updateCountdown();
+
+  window.setInterval(updateCountdown, 1000);
+}
 
 /* =========================================
    SHIPPING
@@ -176,29 +373,23 @@ function renderFilters() {
 
   if (!filters) return;
 
-  filters.innerHTML =
-    CATEGORIES.map((category) => {
-      return `
-        <button
-          class="filter ${
-            selectedCategory === category
-              ? "active"
-              : ""
-          }"
-          data-category="${escapeHtml(category)}"
-        >
-          ${escapeHtml(category)}
-        </button>
-      `;
-    }).join("");
+  filters.innerHTML = CATEGORIES.map((category) => {
+    return `
+      <button
+        class="filter ${
+          selectedCategory === category ? "active" : ""
+        }"
+        data-category="${escapeHtml(category)}"
+      >
+        ${escapeHtml(category)}
+      </button>
+    `;
+  }).join("");
 }
 
 /* =========================================
    PAWSEASE LEASH SIZE HELPERS
 ========================================= */
-
-// Keep the three existing Supabase records.
-// These IDs identify the exact products.
 
 const LEASH_PRODUCT_IDS = new Set([
   "6b38dc19-94a8-461a-ae38-d2b560d97c45",
@@ -273,7 +464,6 @@ function renderProducts() {
     return matchesCategory && matchesSearch;
   });
 
-  // Find the actual Supabase records for each leash size.
   const leashVariants = products
     .filter(isLeashProduct)
     .sort((a, b) => {
@@ -285,7 +475,6 @@ function renderProducts() {
       );
     });
 
-  // Show one leash card instead of three.
   const displayProducts = [];
   let leashAdded = false;
 
@@ -333,9 +522,7 @@ function renderProducts() {
   grid.innerHTML = displayProducts.map(
     ({ product, variants }) => {
 
-      /* -------------------------------------
-         SINGLE LEASH CARD WITH SIZE SELECTOR
-      ------------------------------------- */
+      /* LEASH CARD WITH SIZE SELECTOR */
 
       if (variants) {
         const defaultVariant =
@@ -368,6 +555,8 @@ function renderProducts() {
 
             <div class="product-image">
 
+              <span class="monthly-sale-badge">10% OFF</span>
+
               <img
                 src="${escapeHtml(defaultVariant.image_url)}"
                 alt="PawsEase No-Pull Leash"
@@ -388,15 +577,17 @@ function renderProducts() {
 
               <div>
                 <small>Walks</small>
-
-                <h3>
-                  PawsEase No-Pull Leash
-                </h3>
+                <h3>PawsEase No-Pull Leash</h3>
               </div>
 
-              <b>
-                From ${money(lowestPrice)}
-              </b>
+              <div class="monthly-price">
+                <span class="sale-price">
+                  From ${money(lowestPrice)}
+                </span>
+                <span class="reference-price">
+                  ${referenceMoney(lowestPrice)}
+                </span>
+              </div>
 
               <p>
                 ${escapeHtml(defaultVariant.description || "")}
@@ -429,9 +620,7 @@ function renderProducts() {
         `;
       }
 
-      /* -------------------------------------
-         ALL OTHER PRODUCTS STAY UNCHANGED
-      ------------------------------------- */
+      /* ALL OTHER PRODUCTS */
 
       const badge = product.badge
         ? `
@@ -445,6 +634,8 @@ function renderProducts() {
         <article class="product-card">
 
           <div class="product-image">
+
+            <span class="monthly-sale-badge">10% OFF</span>
 
             <img
               src="${escapeHtml(product.image_url)}"
@@ -476,9 +667,14 @@ function renderProducts() {
               </h3>
             </div>
 
-            <b>
-              ${money(product.price_zar)}
-            </b>
+            <div class="monthly-price">
+              <span class="sale-price">
+                ${money(product.price_zar)}
+              </span>
+              <span class="reference-price">
+                ${referenceMoney(product.price_zar)}
+              </span>
+            </div>
 
             <p>
               ${escapeHtml(product.description || "")}
@@ -551,7 +747,6 @@ function renderCart() {
     cartItems.innerHTML = `
       <div class="empty-cart">
         <h3>Your bag is waiting.</h3>
-
         <p>
           Add something lovely for your pet to get started.
         </p>
@@ -575,17 +770,13 @@ function renderCart() {
         <div>
 
           <div class="cart-title">
-
-            <span>
-              ${escapeHtml(item.name)}
-            </span>
+            <span>${escapeHtml(item.name)}</span>
 
             <b>
               ${money(
                 Number(item.price_zar || 0) * quantity
               )}
             </b>
-
           </div>
 
           <small>
@@ -683,7 +874,6 @@ function openCart() {
   if (!drawer) return;
 
   drawer.classList.add("open");
-
   drawer.setAttribute("aria-hidden", "false");
 }
 
@@ -697,7 +887,6 @@ function closeCart() {
   if (!drawer) return;
 
   drawer.classList.remove("open");
-
   drawer.setAttribute("aria-hidden", "true");
 }
 
@@ -769,7 +958,6 @@ async function loadProducts() {
 ========================================= */
 
 document.addEventListener("click", (event) => {
-
   const categoryButton =
     event.target.closest("[data-category]");
 
@@ -782,8 +970,6 @@ document.addEventListener("click", (event) => {
     return;
   }
 
-  // The selected size's actual Supabase ID
-  // is passed into the existing cart function.
   const leashAddButton =
     event.target.closest("[data-leash-add]");
 
@@ -870,29 +1056,15 @@ if (newsletter) {
 /*
 Checkout is handled by auth.js.
 
-auth.js checks whether the customer
-is signed in and then securely sends
-the order to the Supabase Edge Function.
-
-Do NOT add another checkout handler
-here because that would bypass the
-login protection.
+Do not add another checkout handler here.
 */
 
+initMonthlySpecials();
 loadProducts();
 
 /* =========================================
    VERIFIED PURCHASE VERIFICATION
 ========================================= */
-
-/*
-  This asks our Supabase Edge Function
-  whether PayFast has actually confirmed
-  this payment.
-
-  payfast-itn remains responsible for
-  verifying the actual PayFast transaction.
-*/
 
 async function verifyPurchase(paymentId, attempts = 5) {
   if (!paymentId) {
@@ -966,12 +1138,7 @@ async function handlePaymentReturn() {
   const payment = params.get("payment");
   const paymentId = params.get("payment_id");
 
-  /* ---------------------------------------
-     SUCCESSFUL PAYMENT
-  --------------------------------------- */
-
   if (payment === "success") {
-
     if (!paymentId) {
       console.error(
         "Payment success returned without payment_id."
@@ -993,10 +1160,6 @@ async function handlePaymentReturn() {
     const verifiedPurchase =
       await verifyPurchase(paymentId, 5);
 
-    /* -------------------------------------
-       PAYMENT VERIFIED
-    ------------------------------------- */
-
     if (
       verifiedPurchase &&
       verifiedPurchase.paid === true
@@ -1006,10 +1169,6 @@ async function handlePaymentReturn() {
 
       const alreadyTracked =
         localStorage.getItem(trackingKey) === "1";
-
-      /* -----------------------------------
-         GOOGLE ANALYTICS — PURCHASE
-      ----------------------------------- */
 
       if (!alreadyTracked) {
         trackGA4("purchase", {
@@ -1039,25 +1198,13 @@ async function handlePaymentReturn() {
         );
       }
 
-      /* -----------------------------------
-         CLEAR CART
-      ----------------------------------- */
-
       cart = {};
 
       localStorage.removeItem("moss-mud-cart");
 
       renderCart();
 
-      /* -----------------------------------
-         SHOW SUCCESS MESSAGE
-      ----------------------------------- */
-
       showPaymentSuccess();
-
-      /* -----------------------------------
-         CLEAN URL
-      ----------------------------------- */
 
       window.history.replaceState(
         {},
@@ -1067,10 +1214,6 @@ async function handlePaymentReturn() {
 
       return;
     }
-
-    /* -------------------------------------
-       PAYMENT NOT VERIFIED YET
-    ------------------------------------- */
 
     window.history.replaceState(
       {},
@@ -1084,10 +1227,6 @@ async function handlePaymentReturn() {
 
     return;
   }
-
-  /* ---------------------------------------
-     CANCELLED PAYMENT
-  --------------------------------------- */
 
   if (payment === "cancelled") {
     window.history.replaceState(
